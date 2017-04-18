@@ -22,6 +22,10 @@ commander.command('install <module>')
   .description('Install microservice')
   .action(installService);
 
+commander.command('update <module>')
+  .description('Update microservice')
+  .action(updateService);
+
 commander.parse(process.argv);
 
 if (process.argv.length == 2) {
@@ -37,6 +41,17 @@ function installService(service) {
   console.log('install' + service + ':' + resolve);
 
   MFWCli.install(resolve, service);
+}
+
+function updateService(service) {
+  var rootDIR = commander.root;
+  if (!rootDIR) {
+    rootDIR = process.cwd();
+  }
+  var resolve = path.resolve(rootDIR);
+  console.log('update' + service + ':' + resolve);
+
+  MFWCli.update(resolve, service);
 }
 
 function setupDir(dir) {

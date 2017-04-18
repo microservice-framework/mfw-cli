@@ -54,6 +54,46 @@ MFWCliClass.prototype.install = function(RootDirectory, module) {
 }
 
 /**
+ * Install method.
+ *   Install service to ROOTDIR/services/SERVICE_NAME directory.
+ */
+MFWCliClass.prototype.update = function(RootDirectory, module) {
+  var self = this;
+  self.RootDirectory = RootDirectory;
+
+  var nameArray = module.split('/');
+  var shortName = nameArray.pop();
+  self.module = {
+    full: module,
+    short: shortName,
+    installDir: self.RootDirectory + '/services/' + shortName
+  }
+
+  self.on('isModuleExists', self.isModuleExistsForUpdate);
+  self.on('isModuleDownloaded', self.isModuleDownloadedForUpdate);
+
+  self.checkModule(self.module);
+}
+
+/**
+ * Get executed when Root directory get checked for existance.
+ */
+MFWCliClass.prototype.isModuleExistsForUpdate = function(err, type, module) {
+  var self = this;
+  if (err) {
+    return Message.error(err.message);
+  }
+
+  if (!type) {
+    return Message.error(module.full + ' is not installed yet')
+    //return;
+  }
+  module.tmpDir = tmp.dirSync();
+  self.downloadPackage(module);
+}
+
+
+/**
  * Get executed when Root directory get checked for existance.
  */
 MFWCliClass.prototype.isModuleExists = function(err, type, module) {
@@ -63,8 +103,8 @@ MFWCliClass.prototype.isModuleExists = function(err, type, module) {
   }
 
   if (type) {
-    Message.warning(module.installDir + ' already exists.');
-    return;
+    Message.warning(module.installDir + ' already exists. Overwriting.');
+    //return;
   }
   module.tmpDir = tmp.dirSync();
   self.downloadPackage(module);
@@ -127,6 +167,24 @@ MFWCliClass.prototype.isModuleDownloaded = function(err, module) {
       return Message.error(module.full + ' installed, but `npm install` failed:' + error.message);
     }
     return Message.ok(module.full + ' installed.');
+  });
+
+}
+
+/**
+ * Get executed when Module installed.
+ */
+MFWCliClass.prototype.isModuleDownloadedForUpdate = function(err, module) {
+  var self = this;
+  if (err) {
+    return Message.error(err.message);
+  }
+  process.chdir(module.installDir);
+  return exec('npm update', function(error, stdout, stderr) {
+    if(error) {
+      return Message.error(module.full + ' updated, but `npm update` failed:' + error.message);
+    }
+    return Message.ok(module.full + ' updated.');
   });
 
 }
@@ -197,13 +255,12 @@ MFWCliClass.prototype.checkDirectory = function(subDir) {
  */
 MFWCliClass.prototype.downloadPackage = function(module) {
   var self = this;
-  console.log(module);
   process.chdir(module.tmpDir.name);
   exec('npm pack ' + module.full + '|xargs tar -xzpf', function(err, stdout, stderr) {
     if (err) {
       return self.emit('isModuleDownloaded', err, module);
     }
-    fs.move(module.tmpDir.name + '/package/', module.installDir, { overwrite: false }, function(err) {
+    fs.copy(module.tmpDir.name + '/package/', module.installDir, { overwrite: true }, function(err) {
       fs.emptyDirSync(module.tmpDir.name);
       module.tmpDir.removeCallback();
       return self.emit('isModuleDownloaded', err, module);
