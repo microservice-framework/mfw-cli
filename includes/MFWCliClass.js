@@ -118,6 +118,10 @@ MFWCliClass.prototype.prepareModule = function(module, callback) {
       installDir: self.RootDirectory + '/services/' + shortName,
       envFile: self.RootDirectory + '/configs/' + shortName + '.env',
     }
+    if(self.envName != ''){
+      module.envFile = self.RootDirectory + '/configs/' + self.envName
+        + '.' + shortName + '.env';
+    }
     callback(module);
   });
 }
@@ -188,6 +192,7 @@ MFWCliClass.prototype.isRootExists = function(err, type) {
   if (type) {
     self.message('warning', self.RootDirectory + ' already exists.');
     self.installGitIgnore();
+    self.generatePackageJSON();
     var packageJSONFile = self.getPackageJSONPath();
     fs.stat(packageJSONFile, function(err, stats) {
       if (err) {
@@ -442,7 +447,11 @@ MFWCliClass.prototype.writeEnvFile = function(module, content) {
     content = '';
   }
   fs.writeFileSync(module.envFile, content);
-  fs.linkSync(module.envFile, module.installDir + '/.env');
+  fs.stat(module.installDir + '/.env', function(err, stats) {
+    if(err) {
+      return fs.linkSync(module.envFile, module.installDir + '/.env');
+    }
+  });
 }
 
 /**
@@ -450,23 +459,27 @@ MFWCliClass.prototype.writeEnvFile = function(module, content) {
  */
 MFWCliClass.prototype.generatePackageJSON = function() {
   var self = this;
-  prompt.start();
-  try {
-    var packageSchemaFile = path.resolve(__dirname + '/../templates/package.schema.json');
-    var schema = JSON.parse(fs.readFileSync(packageSchemaFile));
-  } catch(e) {
-    return self.message('error', e.message);
-  }
-  prompt.get(schema, function(err, result) {
-    if (err) {
-      return self.message('error', e.message);
-    }
-    var packageJSONFile = self.getPackageJSONPath();
-    fs.writeFile(packageJSONFile, JSON.stringify(result, null, 2), function(err) {
-      if (err) {
-        return self.message('error', err.message);
+  var packageJSONFile = self.getPackageJSONPath();
+  fs.stat(packageJSONFile, function(err, stats) {
+    if(err) {
+      prompt.start();
+      try {
+        var packageSchemaFile = path.resolve(__dirname + '/../templates/package.schema.json');
+        var schema = JSON.parse(fs.readFileSync(packageSchemaFile));
+      } catch(e) {
+        return self.message('error', e.message);
       }
-    });
+      prompt.get(schema, function(err, result) {
+        if (err) {
+          return self.message('error', e.message);
+        }
+        fs.writeFile(packageJSONFile, JSON.stringify(result, null, 2), function(err) {
+          if (err) {
+            return self.message('error', err.message);
+          }
+        });
+      });
+    }
   });
 }
 

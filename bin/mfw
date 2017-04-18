@@ -12,27 +12,31 @@ const exec = require('child_process').exec;
 
 commander.version(pkg.version).usage('[cmd] [module]');
 
-commander.option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
+//commander.option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
 
 commander.command('setup [dir]')
   .description('setup directory')
+  .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
   .action(setupDir);
 
 commander.command('install <module>')
   .description('Install microservice')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .option('-s, --save', 'Save microservice information')
+  .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
   .action(installService);
 
 commander.command('update <module>')
   .description('Update microservice')
   .option('-r, --root <dir>', 'Optionaly root directory')
+  .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
   .action(updateService);
 
 commander.command('uninstall <module>')
   .description('Uninstall microservice')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .option('-s, --save', 'Save microservice information')
+  .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
   .action(uninstallService);
 
 
@@ -47,7 +51,6 @@ function setupDir(dir, options) {
     dir = process.cwd();
   }
   var resolve = path.resolve(dir);
-
   var envName = options.env;
   if (!envName) {
     envName = '';
