@@ -170,12 +170,38 @@ MFWCliClass.prototype.generatePackageJSON = function() {
     if (err) {
       return self.message('error', e.message);
     }
-    var packaheJSONFile = self.RootDirectory + '/package.json';
-    fs.writeFile(packaheJSONFile, JSON.stringify(result, null, 2), function(err) {
+    var packageJSONFile = self.RootDirectory + '/package.json';
+    fs.writeFile(packageJSONFile, JSON.stringify(result, null, 2), function(err) {
       if (err) {
         return self.message('error', err.message);
       }
     });
+  });
+}
+
+/**
+ * Generate Package JSON.
+ */
+MFWCliClass.prototype.updatePackageJSON = function(module) {
+  var self = this;
+
+  var packageJSONFile = self.RootDirectory + '/package.json';
+  var packageJSON = '';
+
+  try {
+    packageJSON = JSON.parse(fs.readFileSync(packageJSONFile));
+  } catch (e) {
+    return self.message('error', e.message);
+  }
+  if(!packageJSON.services) {
+    packageJSON.services = {}
+  }
+  packageJSON.services[module.short] = module.full;
+
+  fs.writeFile(packageJSONFile, JSON.stringify(packageJSON, null, 2), function(err) {
+    if (err) {
+      return self.message('error', err.message);
+    }
   });
 }
 
@@ -225,7 +251,7 @@ MFWCliClass.prototype.isModuleDownloaded = function(err, module) {
   process.chdir(module.installDir);
   return exec('npm install', function(error, stdout, stderr) {
     if (error) {
-      return self.message('error', module.full
+      self.message('error', module.full
         + ' installed, but `npm install` failed:' + error.message);
     }
     self.configureModule(module);
@@ -321,7 +347,6 @@ MFWCliClass.prototype.checkDirectory = function(subDir) {
 MFWCliClass.prototype.downloadPackage = function(module) {
   var self = this;
   process.chdir(module.tmpDir.name);
-  console.log(module);
   exec('npm pack ' + module.full + '|xargs tar -xzpf', function(err, stdout, stderr) {
     if (err) {
       return self.emit('isModuleDownloaded', err, module);
@@ -371,8 +396,9 @@ MFWCliClass.prototype.configureModule = function(module) {
         }
       }
       self.writeEnvFile(module, envContent);
+      self.updatePackageJSON(module);
     });
-  })
+  });
 }
 
 /**
