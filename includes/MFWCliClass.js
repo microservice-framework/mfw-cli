@@ -23,7 +23,7 @@ function MFWCliClass() {
     error: [],
     warning: []
   };
-  process.on('beforeExit', function(){
+  process.on('beforeExit', function() {
     self.printMessages();
   });
 }
@@ -50,7 +50,7 @@ MFWCliClass.prototype.install = function(RootDirectory, module) {
   var self = this;
   self.RootDirectory = RootDirectory;
 
-  self.prepareModule(module, function(){
+  self.prepareModule(module, function() {
     self.on('isModuleExists', self.isModuleExists);
     self.on('isModuleDownloaded', self.isModuleDownloaded);
     self.checkModule(self.module);
@@ -65,7 +65,7 @@ MFWCliClass.prototype.update = function(RootDirectory, module) {
   var self = this;
   self.RootDirectory = RootDirectory;
 
-  self.prepareModule(module, function(){
+  self.prepareModule(module, function() {
     self.on('isModuleExists', self.isModuleExistsForUpdate);
     self.on('isModuleDownloaded', self.isModuleDownloadedForUpdate);
     self.checkModule(self.module);
@@ -76,14 +76,14 @@ MFWCliClass.prototype.update = function(RootDirectory, module) {
  */
 MFWCliClass.prototype.prepareModule = function(module, callback) {
   var self = this;
-  fs.stat(module, function(err, stats){
-    if(!err) {
+  fs.stat(module, function(err, stats) {
+    if (!err) {
       module = path.resolve(module);;
     }
     var nameArray = module.split('/');
     var shortName = nameArray.pop();
 
-    if(!shortName || shortName == '') {
+    if (!shortName || shortName == '') {
       shortName = nameArray.pop();
     }
 
@@ -225,7 +225,8 @@ MFWCliClass.prototype.isModuleDownloaded = function(err, module) {
   process.chdir(module.installDir);
   return exec('npm install', function(error, stdout, stderr) {
     if (error) {
-      return self.message('error', module.full + ' installed, but `npm install` failed:' + error.message);
+      return self.message('error', module.full
+        + ' installed, but `npm install` failed:' + error.message);
     }
     self.configureModule(module);
     return self.message('ok', module.full + ' installed.');
@@ -244,7 +245,8 @@ MFWCliClass.prototype.isModuleDownloadedForUpdate = function(err, module) {
   process.chdir(module.installDir);
   return exec('npm update', function(error, stdout, stderr) {
     if (error) {
-      return self.message('error', module.full + ' updated, but `npm update` failed:' + error.message);
+      return self.message('error', module.full
+        + ' updated, but `npm update` failed:' + error.message);
     }
     return self.message('ok', module.full + ' updated.');
   });
@@ -327,8 +329,8 @@ MFWCliClass.prototype.downloadPackage = function(module) {
     fs.copy(module.tmpDir.name + '/package/',
       module.installDir, { overwrite: true },
       function(err) {
-        //fs.emptyDirSync(module.tmpDir.name);
-        //module.tmpDir.removeCallback();
+        fs.emptyDirSync(module.tmpDir.name);
+        module.tmpDir.removeCallback();
         return self.emit('isModuleDownloaded', err, module);
       });
   });
@@ -343,7 +345,8 @@ MFWCliClass.prototype.configureModule = function(module) {
   fs.stat(envSchema, function(err, stats) {
     if (err) {
       self.writeEnvFile(module);
-      return self.message('warning', envSchema + ' is missing. Update ' + module.envFile + ' before use ' + module.short);
+      return self.message('warning', envSchema
+        + ' is missing. Update ' + module.envFile + ' before use ' + module.short);
     }
     prompt.start();
     try {
@@ -359,13 +362,12 @@ MFWCliClass.prototype.configureModule = function(module) {
       }
       // Convert JSON to ENV file format
       var envContent = '';
-      for(var name in result){
+      for (var name in result) {
         var value = result[name];
-        if (typeof value === "number") {
-          envContent = envContent + name.toUpperCase() + '=' + value + "\n";
-        }
-        else {
-          envContent = envContent + name.toUpperCase() + '="' + value + '"' + "\n";
+        if (typeof value === 'number') {
+          envContent = envContent + name.toUpperCase() + '=' + value + '\n';
+        } else {
+          envContent = envContent + name.toUpperCase() + '="' + value + '"' + '\n';
         }
       }
       self.writeEnvFile(module, envContent);
@@ -380,16 +382,16 @@ MFWCliClass.prototype.setModuleDefaults = function(schema) {
   var self = this;
   var packageJSONFile = path.resolve(self.RootDirectory + '/package.json');
   var packageDefault = JSON.parse(fs.readFileSync(packageJSONFile));
-  for(var name in schema.properties) {
-    if(packageDefault[name]) {
+  for (var name in schema.properties) {
+    if (packageDefault[name]) {
       schema.properties[name].default = packageDefault[name];
     }
   }
-  //set SECURE_KEY
+
   schema.properties.secure_key = {
-    type: "string",
-    description: "SECURE_KEY",
-    message: "must be more than 6 symbols",
+    type: 'string',
+    description: 'SECURE_KEY',
+    message: 'must be more than 6 symbols',
     conform: function(secureKey) {
       return (secureKey.length > 6);
     },
@@ -397,15 +399,14 @@ MFWCliClass.prototype.setModuleDefaults = function(schema) {
     required: true
   }
   schema.properties.pidfile = {
-    type: "string",
-    description: "PID file path",
+    type: 'string',
+    description: 'PID file path',
     default: self.RootDirectory + '/pids/' + self.module.short + '.pid',
     required: true
   }
-
   schema.properties.logfile = {
-    type: "string",
-    description: "Log file path",
+    type: 'string',
+    description: 'Log file path',
     default: self.RootDirectory + '/logs/' + self.module.short + '.log',
     required: true
   }
@@ -418,7 +419,7 @@ MFWCliClass.prototype.setModuleDefaults = function(schema) {
  */
 MFWCliClass.prototype.writeEnvFile = function(module, content) {
   var self = this;
-  if(!content) {
+  if (!content) {
     content = '';
   }
   fs.writeFileSync(module.envFile, content);
