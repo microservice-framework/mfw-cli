@@ -1,0 +1,162 @@
+#!/usr/bin/env node
+
+'use strict';
+
+const commander = require('commander');
+const path = require('path');
+const fs = require('fs');
+const pkg = require('../package.json');
+const Message = require('../includes/message.js');
+const MFWCli = require('../includes/MFWCliClass.js');
+const exec = require('child_process').exec;
+
+commander.version(pkg.version).usage('[cmd] [module]');
+
+commander.option('-r, --root <dir>', 'Optionaly root directory')
+
+commander.command('setup [dir]')
+  .description('setup directory')
+  .action(setupDir);
+
+commander.command('install <module>')
+  .description('Install microservice')
+  .action(installService);
+
+commander.parse(process.argv);
+
+if (process.argv.length == 2) {
+  commander.outputHelp();
+}
+var rootDIR = false;
+
+function installService(service) {
+  rootDIR = commander.root;
+  if (!rootDIR) {
+    rootDIR = process.cwd();
+  }
+  rootDIR = path.resolve(rootDIR);
+  var tmp = rootDIR + '/.tmp';
+  Message.message('Installing ' + service + ' ' + rootDIR);
+  createTMPDirectory(tmp,function(err, dir) {
+    if (err) {
+      return Message.error(err.message);
+    }
+    try {
+      process.chdir(dir);
+      downloadPackage(service, function(err, name) {
+        if (err) {
+          return Message.error(err.message);
+        }
+        process.chdir(rootDIR);
+        deleteTMPRecursive(tmp);
+        var destDir = rootDIR + '/services/' + name;
+        processNPMInstall(destDir, function(err) {
+          if (err) {
+            return Message.error('Failed to process npm install');
+          }
+          Message.ok(service + ' installed as services/' + name);
+        });
+      });
+    }
+    catch (err) {
+      return Message.error(err.message);
+    }
+  })
+}
+
+function deleteFolderRecursive(path) {
+  if (fs.existsSync(path)) {
+    fs.readdirSync(path).forEach(function(file,index) {
+      var curPath = path + '/' + file;
+      if (fs.lstatSync(curPath).isDirectory()) { // recurse
+        deleteFolderRecursive(curPath);
+      } else { // delete file
+        fs.unlinkSync(curPath);
+      }
+    });
+    fs.rmdirSync(path);
+  }
+};
+
+function deleteTMPRecursive(path) {
+  if (fs.existsSync(path)) {
+    fs.readdirSync(path).forEach(function(file,index) {
+      var curPath = path + '/' + file;
+      if (fs.lstatSync(curPath).isDirectory()) { // recurse
+        deleteFolderRecursive(curPath);
+      } else { // delete file
+        fs.unlinkSync(curPath);
+      }
+    });
+  }
+}
+
+function processNPMInstall(dir, callback) {
+  currentDIR = path.resolve(process.cwd());
+  var processDir = (path.resolve(dir));
+  process.chdir(processDir);
+  exec('npm install', function(error, stdout, stderr) {
+    process.chdir(currentDIR);
+    return callback(error);
+  })
+}
+
+function downloadPackage(name, callback) {
+  exec('npm pack ' + name + '|xargs tar -xzpf', function(error, stdout, stderr) {
+    if (error) {
+      return callback(error);
+    }
+    var nameArray = name.split('/');
+    var serviceFolder = nameArray.pop();
+    var destDir = rootDIR + '/services/' + serviceFolder;
+    Message.error('destDir' + destDir);
+
+    isDirectoryExists(destDir, function(status) {
+      if (status) {
+        return callback(new Error('Failed to process npm install:: ' + destDir));
+      }
+      exec('mv package ../services/' + serviceFolder, function(error, stdout, stderr) {
+        return callback(error, serviceFolder);
+      })
+    });
+  });
+}
+
+function setupDir(dir) {
+  if (!dir) {
+    dir = process.cwd();
+  }
+  var resolve = path.resolve(dir);
+  console.log('setup:' + resolve);
+
+  MFWCliClass.setup(resolve);
+}
+
+function isDirectoryExists(dir, callback) {
+  fs.stat(dir, function(err, stats) {
+    if (err) {
+      return callback(false);
+    }
+    return callback(true);
+  });
+}
+
+function createTMPDirectory(dir, callback) {
+  fs.stat(dir, function(err, stats) {
+    if (err) {
+      // Directory doesn't exist or something.
+      return fs.mkdir(dir, function(err) {
+        return callback(err, dir);
+      });
+    }
+    if (!stats.isDirectory()) {
+      // This isn't a directory!
+      return callback(new Error(dir + ' is not a directory!'), dir);
+    }
+    Message.warning(dir + ' already exists. Cleaning');
+    deleteTMPRecursive(dir);
+    return callback(null, dir);
+  });
+}
+
+

@@ -1,0 +1,24 @@
+{
+  "name": "mfw-cli",
+  "version": "1.0.0",
+  "description": "Console utility for mFW",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "jscs": "jscs --fix bin/* includes/*.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/microservice-framework/mfw-cli.git"
+  },
+  "author": "Gormartsen",
+  "license": "GPL-3.0",
+  "bugs": {
+    "url": "https://github.com/microservice-framework/mfw-cli/issues"
+  },
+  "homepage": "https://github.com/microservice-framework/mfw-cli#readme",
+  "dependencies": {
+    "colors": "^1.1.2",
+    "commander": "^2.9.0"
+  }
+}
