@@ -74,7 +74,8 @@ MFWCliClass.prototype.update = function(RootDirectory, module) {
   self.module = {
     full: module,
     short: shortName,
-    installDir: self.RootDirectory + '/services/' + shortName
+    installDir: self.RootDirectory + '/services/' + shortName,
+    envFile: self.RootDirectory + '/configs/' + shortName + '.env',
   }
 
   self.on('isModuleExists', self.isModuleExistsForUpdate);
@@ -213,6 +214,7 @@ MFWCliClass.prototype.isModuleDownloaded = function(err, module) {
     if (error) {
       return self.message('error', module.full + ' installed, but `npm install` failed:' + error.message);
     }
+    self.configureModule(module);
     return self.message('ok', module.full + ' installed.');
   });
 
@@ -316,6 +318,72 @@ MFWCliClass.prototype.downloadPackage = function(module) {
         return self.emit('isModuleDownloaded', err, module);
       });
   });
+}
+
+/**
+ * Download Package.
+ */
+MFWCliClass.prototype.configureModule = function(module) {
+  var self = this;
+  var envSchema = module.installDir + '/schema/install.json';
+  fs.stat(envSchema, function(err, stats) {
+    if (err) {
+      self.writeEnvFile(module);
+      return self.message('warning', envSchema + ' is missing. Update ' + module.envFile + ' before use ' + module.short);
+    }
+    prompt.start();
+    try {
+      var moduleSchemaFile = path.resolve(envSchema);
+      var schema = JSON.parse(fs.readFileSync(moduleSchemaFile));
+    } catch(e) {
+      return self.message('error', e.message);
+    }
+    schema = self.setModuleDefaults(schema);
+    prompt.get(schema, function(err, result) {
+      if (err) {
+        return self.message('error', e.message);
+      }
+      // Convert JSON to ENV file format
+      var envContent = '';
+      for(var name in result){
+        var value = result[name];
+        if (typeof value === "number") {
+          envContent = envContent + name.toUpperCase + '=' + value;
+        }
+        else {
+          envContent = envContent + name.toUpperCase + '="' + value + '"';
+        }
+      }
+      self.writeEnvFile(module, envContent);
+    });
+  })
+}
+
+/**
+ * Download Package.
+ */
+MFWCliClass.prototype.setModuleDefaults = function(schema) {
+  var self = this;
+  var packageJSONFile = path.resolve(self.RootDirectory + '/package.json');
+  self.packageDefault = JSON.parse(fs.readFileSync(packageJSONFile));
+  for(var name in schema.properties) {
+    if(packageDefault[name]) {
+      schema.properties[name].default = packageDefault[name];
+    }
+  }
+  return schema;
+}
+
+/**
+ * Download Package.
+ */
+MFWCliClass.prototype.writeEnvFile = function(module, content) {
+  var self = this;
+  if(!content) {
+    content = '';
+  }
+  fs.writeFileSync(module.envFile, content);
+  fs.linkSync(module.envFile, module.installDir + '/.env');
 }
 
 /**
