@@ -13,6 +13,7 @@ const exec = require('child_process').exec;
 commander.version(pkg.version).usage('[cmd] [module]');
 
 commander.option('-r, --root <dir>', 'Optionaly root directory')
+commander.option('-s, --save', 'Save microservice information')
 
 commander.command('setup [dir]')
   .description('setup directory')
@@ -38,7 +39,6 @@ function installService(service) {
     rootDIR = process.cwd();
   }
   var resolve = path.resolve(rootDIR);
-  console.log('install' + service + ':' + resolve);
 
   MFWCli.install(resolve, service);
 }
@@ -49,7 +49,6 @@ function updateService(service) {
     rootDIR = process.cwd();
   }
   var resolve = path.resolve(rootDIR);
-  console.log('update' + service + ':' + resolve);
 
   MFWCli.update(resolve, service);
 }
@@ -59,7 +58,6 @@ function setupDir(dir) {
     dir = process.cwd();
   }
   var resolve = path.resolve(dir);
-  console.log('setup:' + resolve);
 
   MFWCli.setup(resolve);
 }

@@ -6,13 +6,21 @@ const fs = require('fs-extra');
 const Message = require('../includes/message.js');
 const tmp = require('tmp');
 const exec = require('child_process').exec;
+const path = require('path');
+const prompt = require('prompt');
 
+prompt.message = '';
 /**
  * Constructor.
  */
-function MFWCliClass(RootDirectory) {
+function MFWCliClass() {
   EventEmitter.call(this);
   var self = this;
+  self.messages = {
+    ok: [],
+    error: [],
+    warning: []
+  };
 
 }
 util.inherits(MFWCliClass, EventEmitter);
@@ -27,7 +35,7 @@ MFWCliClass.prototype.setup = function(RootDirectory) {
 
   self.on('isRootExists', self.isRootExists);
   self.on('isDirExists', self.isDirExists);
-
+  self.on('done', self.printMessages);
   self.checkRootDirectory();
 }
 
@@ -49,7 +57,7 @@ MFWCliClass.prototype.install = function(RootDirectory, module) {
 
   self.on('isModuleExists', self.isModuleExists);
   self.on('isModuleDownloaded', self.isModuleDownloaded);
-
+  self.on('done', self.printMessages);
   self.checkModule(self.module);
 }
 
@@ -71,7 +79,7 @@ MFWCliClass.prototype.update = function(RootDirectory, module) {
 
   self.on('isModuleExists', self.isModuleExistsForUpdate);
   self.on('isModuleDownloaded', self.isModuleDownloadedForUpdate);
-
+  self.on('done', self.printMessages);
   self.checkModule(self.module);
 }
 
@@ -81,17 +89,15 @@ MFWCliClass.prototype.update = function(RootDirectory, module) {
 MFWCliClass.prototype.isModuleExistsForUpdate = function(err, type, module) {
   var self = this;
   if (err) {
-    return Message.error(err.message);
+    return self.message('error', err.message);
   }
 
   if (!type) {
-    return Message.error(module.full + ' is not installed yet')
-    //return;
+    return self.message('error', module.full + ' is not installed yet')
   }
   module.tmpDir = tmp.dirSync();
   self.downloadPackage(module);
 }
-
 
 /**
  * Get executed when Root directory get checked for existance.
@@ -99,12 +105,12 @@ MFWCliClass.prototype.isModuleExistsForUpdate = function(err, type, module) {
 MFWCliClass.prototype.isModuleExists = function(err, type, module) {
   var self = this;
   if (err) {
-    return Message.error(err.message);
+    return self.message('error', err.message);
   }
 
   if (type) {
-    Message.warning(module.installDir + ' already exists. Overwriting.');
-    //return;
+    self.message('warning', module.installDir + ' already exists. Overwriting.');
+    // return;
   }
   module.tmpDir = tmp.dirSync();
   self.downloadPackage(module);
@@ -116,19 +122,61 @@ MFWCliClass.prototype.isModuleExists = function(err, type, module) {
 MFWCliClass.prototype.isRootExists = function(err, type) {
   var self = this;
   if (err) {
-    return Message.error(err.message);
+    return self.message('error', err.message);
   }
 
   if (type) {
-    Message.warning(self.RootDirectory + ' already exists.');
+    self.message('warning', self.RootDirectory + ' already exists.');
+    self.installGitIgnore();
     return self.checkSkel();
   }
 
   fs.mkdir(self.RootDirectory, function(err) {
     if (err) {
-      return Message.error(err.message);
+      return self.message('error', err.message);
     }
+    self.installGitIgnore();
+    self.generatePackageJSON();
     return self.checkSkel();
+  });
+}
+
+/**
+ * Generate Package JSON.
+ */
+MFWCliClass.prototype.generatePackageJSON = function() {
+  var self = this;
+  prompt.start();
+  try {
+    var packageSchemaFile = path.resolve(__dirname + '/../templates/package.schema.json');
+    var schema = JSON.parse(fs.readFileSync(packageSchemaFile));
+  } catch(e) {
+    return self.message('error', e.message);
+  }
+  prompt.get(schema, function(err, result) {
+    if (err) {
+      return self.message('error', e.message);
+    }
+    var packaheJSONFile = self.RootDirectory + '/package.json';
+    fs.writeFile(packaheJSONFile, JSON.stringify(result, null, 2), function(err) {
+      if (err) {
+        return self.message('error', err.message);
+      }
+    });
+  });
+}
+
+/**
+ * Install .gitignore from template.
+ */
+MFWCliClass.prototype.installGitIgnore = function() {
+  var self = this;
+  var gitIgnore = path.resolve(__dirname + '/../templates/gitignore');
+  fs.copy(gitIgnore, self.RootDirectory + '/.gitignore', { overwrite: true }, function(err) {
+    if (err) {
+      return self.message('error', err.message);
+    }
+    return self.message('ok', '.gitignore copied');
   });
 }
 
@@ -138,17 +186,17 @@ MFWCliClass.prototype.isRootExists = function(err, type) {
 MFWCliClass.prototype.isDirExists = function(err, type, dir) {
   var self = this;
   if (err) {
-    return Message.error(err.message);
+    return self.message('error', err.message);
   }
   if (type) {
-    return Message.warning(dir + ' already exists.');
+    return self.message('warning', dir + ' already exists.');
   }
 
   fs.mkdir(dir, function(err) {
     if (err) {
-      return Message.error(err.message);
+      return self.message('error', err.message);
     }
-    return Message.ok(dir + ' created.');
+    return self.message('ok', dir + ' created.');
   });
 }
 
@@ -159,14 +207,16 @@ MFWCliClass.prototype.isDirExists = function(err, type, dir) {
 MFWCliClass.prototype.isModuleDownloaded = function(err, module) {
   var self = this;
   if (err) {
-    return Message.error(err.message);
+    return self.message('error', err.message);
   }
   process.chdir(module.installDir);
   return exec('npm install', function(error, stdout, stderr) {
-    if(error) {
-      return Message.error(module.full + ' installed, but `npm install` failed:' + error.message);
+    if (error) {
+      self.message('error', module.full + ' installed, but `npm install` failed:' + error.message);
+      return self.emit('done');
     }
-    return Message.ok(module.full + ' installed.');
+    self.message('ok', module.full + ' installed.');
+    return self.emit('done');
   });
 
 }
@@ -177,17 +227,20 @@ MFWCliClass.prototype.isModuleDownloaded = function(err, module) {
 MFWCliClass.prototype.isModuleDownloadedForUpdate = function(err, module) {
   var self = this;
   if (err) {
-    return Message.error(err.message);
+    return self.message('error', err.message);
   }
   process.chdir(module.installDir);
   return exec('npm update', function(error, stdout, stderr) {
-    if(error) {
-      return Message.error(module.full + ' updated, but `npm update` failed:' + error.message);
+    if (error) {
+      self.message('error', module.full + ' updated, but `npm update` failed:' + error.message);
+      return self.emit('done');
     }
-    return Message.ok(module.full + ' updated.');
+    self.message('ok', module.full + ' updated.');
+    return self.emit('done');
   });
 
 }
+
 /**
  * Process Root directory check.
  */
@@ -260,12 +313,50 @@ MFWCliClass.prototype.downloadPackage = function(module) {
     if (err) {
       return self.emit('isModuleDownloaded', err, module);
     }
-    fs.copy(module.tmpDir.name + '/package/', module.installDir, { overwrite: true }, function(err) {
-      fs.emptyDirSync(module.tmpDir.name);
-      module.tmpDir.removeCallback();
-      return self.emit('isModuleDownloaded', err, module);
-    });
+    fs.copy(module.tmpDir.name + '/package/',
+      module.installDir, { overwrite: true },
+      function(err) {
+        fs.emptyDirSync(module.tmpDir.name);
+        module.tmpDir.removeCallback();
+        return self.emit('isModuleDownloaded', err, module);
+      });
   });
+}
+
+/**
+ * Set message.
+ */
+MFWCliClass.prototype.message = function(type, message) {
+  var self = this;
+  self.messages[type].push(message);
+}
+
+/**
+ * Print Messages.
+ */
+MFWCliClass.prototype.printMessages = function() {
+  var self = this;
+  for (var type in self.messages) {
+    if (self.messages[type].length > 0) {
+      for (var i in self.messages[type]) {
+        var message = self.messages[type][i];
+        switch (type){
+          case 'error': {
+            Message.error(message);
+            break;
+          }
+          case 'warning': {
+            Message.warning(message);
+            break;
+          }
+          case 'ok': {
+            Message.ok(message);
+            break;
+          }
+        }
+      }
+    }
+  }
 }
 
 exports = module.exports = new MFWCliClass();

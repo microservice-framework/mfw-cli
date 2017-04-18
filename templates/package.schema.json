@@ -1,0 +1,26 @@
+{
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "name",
+      "required": true
+    },
+    "version": {
+      "type": "string",
+      "description": "version",
+      "default": "1.0.0",
+      "required": true
+    },
+    "mongo_url": {
+      "type": "string",
+      "description": "Mongo URL",
+      "default": "mongodb://localhost:27017/mfw",
+      "required": true
+    },
+    "mongo_options": {
+      "type": "string",
+      "description": "Mongo Options (example: ?replicaSet=rs1&slaveOk=true)",
+      "default": ""
+    }
+  }
+}
