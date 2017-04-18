@@ -370,6 +370,7 @@ MFWCliClass.prototype.configureModule = function(module) {
   fs.stat(envSchema, function(err, stats) {
     if (err) {
       self.writeEnvFile(module);
+      self.updatePackageJSON(module);
       return self.message('warning', envSchema
         + ' is missing. Update ' + module.envFile + ' before use ' + module.short);
     }
