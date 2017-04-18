@@ -529,7 +529,12 @@ MFWCliClass.prototype.checkModuleConfigured = function(module) {
     if (err) {
       return self.configureModule(module);
     }
-    return fs.linkSync(module.envFile, module.installDir + '/.env');
+    self.addModuleToPackageJSON(module);
+    fs.stat(module.installDir + '/.env', function(err, stats) {
+      if(err) {
+        return fs.linkSync(module.envFile, module.installDir + '/.env');
+      }
+    });
   });
 }
 

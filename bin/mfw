@@ -53,7 +53,6 @@ function installService(service) {
     rootDIR = process.cwd();
   }
   var resolve = path.resolve(rootDIR);
-
   MFWCli.install(resolve, service, commander.save);
 }
 
@@ -67,13 +66,13 @@ function updateService(service) {
   MFWCli.update(resolve, service);
 }
 
-function uninstallService(service, commander.save) {
+function uninstallService(service) {
   var rootDIR = commander.root;
   if (!rootDIR) {
     rootDIR = process.cwd();
   }
   var resolve = path.resolve(rootDIR);
 
-  MFWCli.uninstall(resolve, service);
+  MFWCli.uninstall(resolve, service, commander.save);
 }
 
