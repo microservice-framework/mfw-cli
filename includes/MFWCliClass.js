@@ -211,11 +211,9 @@ MFWCliClass.prototype.isModuleDownloaded = function(err, module) {
   process.chdir(module.installDir);
   return exec('npm install', function(error, stdout, stderr) {
     if (error) {
-      self.message('error', module.full + ' installed, but `npm install` failed:' + error.message);
-      return self.emit('done');
+      return self.message('error', module.full + ' installed, but `npm install` failed:' + error.message);
     }
-    self.message('ok', module.full + ' installed.');
-    return self.emit('done');
+    return self.message('ok', module.full + ' installed.');
   });
 
 }
@@ -231,11 +229,9 @@ MFWCliClass.prototype.isModuleDownloadedForUpdate = function(err, module) {
   process.chdir(module.installDir);
   return exec('npm update', function(error, stdout, stderr) {
     if (error) {
-      self.message('error', module.full + ' updated, but `npm update` failed:' + error.message);
-      return self.emit('done');
+      return self.message('error', module.full + ' updated, but `npm update` failed:' + error.message);
     }
-    self.message('ok', module.full + ' updated.');
-    return self.emit('done');
+    return self.message('ok', module.full + ' updated.');
   });
 
 }
