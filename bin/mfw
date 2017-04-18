@@ -12,8 +12,7 @@ const exec = require('child_process').exec;
 
 commander.version(pkg.version).usage('[cmd] [module]');
 
-commander.option('-r, --root <dir>', 'Optionaly root directory')
-commander.option('-s, --save', 'Save microservice information')
+commander.option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
 
 commander.command('setup [dir]')
   .description('setup directory')
@@ -21,14 +20,19 @@ commander.command('setup [dir]')
 
 commander.command('install <module>')
   .description('Install microservice')
+  .option('-r, --root <dir>', 'Optionaly root directory')
+  .option('-s, --save', 'Save microservice information')
   .action(installService);
 
 commander.command('update <module>')
   .description('Update microservice')
+  .option('-r, --root <dir>', 'Optionaly root directory')
   .action(updateService);
 
 commander.command('uninstall <module>')
   .description('Uninstall microservice')
+  .option('-r, --root <dir>', 'Optionaly root directory')
+  .option('-s, --save', 'Save microservice information')
   .action(uninstallService);
 
 
@@ -38,41 +42,56 @@ if (process.argv.length == 2) {
   commander.outputHelp();
 }
 
-function setupDir(dir) {
+function setupDir(dir, options) {
   if (!dir) {
     dir = process.cwd();
   }
   var resolve = path.resolve(dir);
 
-  MFWCli.setup(resolve);
+  var envName = options.env;
+  if (!envName) {
+    envName = '';
+  }
+
+  MFWCli.setup(resolve, envName);
 }
 
-function installService(service) {
-  var rootDIR = commander.root;
+function installService(service, options) {
+  var rootDIR = options.root;
   if (!rootDIR) {
     rootDIR = process.cwd();
   }
   var resolve = path.resolve(rootDIR);
-  MFWCli.install(resolve, service, commander.save);
+  var envName = options.env;
+  if (!envName) {
+    envName = '';
+  }
+  MFWCli.install(resolve, service, options.save, envName);
 }
 
-function updateService(service) {
-  var rootDIR = commander.root;
+function updateService(service, options) {
+  var rootDIR = options.root;
   if (!rootDIR) {
     rootDIR = process.cwd();
   }
   var resolve = path.resolve(rootDIR);
-
-  MFWCli.update(resolve, service);
+  var envName = options.env;
+  if (!envName) {
+    envName = '';
+  }
+  MFWCli.update(resolve, service, envName);
 }
 
-function uninstallService(service) {
-  var rootDIR = commander.root;
+function uninstallService(service, options) {
+  var rootDIR = options.root;
   if (!rootDIR) {
     rootDIR = process.cwd();
   }
   var resolve = path.resolve(rootDIR);
-
-  MFWCli.uninstall(resolve, service, commander.save);
+  var envName = options.env;
+  if (!envName) {
+    envName = '';
+  }
+  MFWCli.uninstall(resolve, service, options.save, envName);
 }
 

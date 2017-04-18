@@ -34,9 +34,10 @@ util.inherits(MFWCliClass, EventEmitter);
  * Setup method.
  *   Prepare root directory.
  */
-MFWCliClass.prototype.setup = function(RootDirectory) {
+MFWCliClass.prototype.setup = function(RootDirectory, envName) {
   var self = this;
   self.RootDirectory = RootDirectory;
+  self.envName = envName;
 
   self.on('isRootExists', self.isRootExists);
   self.on('isDirExists', self.isDirExists);
@@ -47,10 +48,11 @@ MFWCliClass.prototype.setup = function(RootDirectory) {
  * Install method.
  *   Install service to ROOTDIR/services/SERVICE_NAME directory.
  */
-MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption) {
+MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption, envName) {
   var self = this;
   self.RootDirectory = RootDirectory;
   self.isSaveOption = isSaveOption;
+  self.envName = envName;
 
   self.on('isModuleExists', self.isModuleExists);
   self.on('isModuleDownloaded', self.isModuleDownloaded);
@@ -64,9 +66,11 @@ MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption) {
  * Install method.
  *   Install service to ROOTDIR/services/SERVICE_NAME directory.
  */
-MFWCliClass.prototype.update = function(RootDirectory, module) {
+MFWCliClass.prototype.update = function(RootDirectory, module, envName) {
   var self = this;
   self.RootDirectory = RootDirectory;
+  self.envName = envName;
+
   self.on('isModuleExists', self.isModuleExistsForUpdate);
   self.on('isModuleDownloaded', self.isModuleDownloadedForUpdate);
 
@@ -79,10 +83,12 @@ MFWCliClass.prototype.update = function(RootDirectory, module) {
  * Uninstall method.
  *   Install service to ROOTDIR/services/SERVICE_NAME directory.
  */
-MFWCliClass.prototype.uninstall = function(RootDirectory, module, isSaveOption) {
+MFWCliClass.prototype.uninstall = function(RootDirectory, module, isSaveOption, envName) {
   var self = this;
   self.RootDirectory = RootDirectory;
   self.isSaveOption = isSaveOption;
+  self.envName = envName;
+
   self.on('isModuleExists', self.isModuleExistsForUninstall);
 
   self.prepareModule(module, function(module) {
