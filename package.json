@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Console utility for mFW",
   "main": "index.js",
+  "directories": {
+    "bin": "./bin"
+  },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "jscs": "jscs --fix bin/* includes/*.js"
