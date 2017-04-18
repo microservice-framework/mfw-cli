@@ -493,12 +493,18 @@ MFWCliClass.prototype.restoreModules = function() {
  */
 MFWCliClass.prototype.installGitIgnore = function() {
   var self = this;
-  var gitIgnore = path.resolve(__dirname + '/../templates/gitignore');
-  fs.copy(gitIgnore, self.RootDirectory + '/.gitignore', { overwrite: true }, function(err) {
-    if (err) {
-      return self.message('error', err.message);
+  fs.stat(self.RootDirectory + '/.gitignore', function(err, stats) {
+    if(err) {
+      var gitIgnore = path.resolve(__dirname + '/../templates/gitignore');
+      fs.copy(gitIgnore, self.RootDirectory + '/.gitignore', { overwrite: true }, function(err) {
+        if (err) {
+          return self.message('error', err.message);
+        }
+        return self.message('ok', '.gitignore copied');
+      });
+      return;
     }
-    return self.message('ok', '.gitignore copied');
+    self.message('warning', '.gitignore already exists');
   });
 }
 
