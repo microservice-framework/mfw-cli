@@ -63,8 +63,8 @@ MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption, en
 }
 
 /**
- * Install method.
- *   Install service to ROOTDIR/services/SERVICE_NAME directory.
+ * Update method.
+ *   Update service in ROOTDIR/services/SERVICE_NAME directory.
  */
 MFWCliClass.prototype.update = function(RootDirectory, module, envName) {
   var self = this;
@@ -77,6 +77,17 @@ MFWCliClass.prototype.update = function(RootDirectory, module, envName) {
   self.prepareModule(module, function(module) {
     self.checkModule(module);
   });
+}
+
+/**
+ * Install method.
+ *   Install service to ROOTDIR/services/SERVICE_NAME directory.
+ */
+MFWCliClass.prototype.updateAll = function(RootDirectory, envName) {
+  var self = this;
+  self.RootDirectory = RootDirectory;
+  self.envName = envName;
+  self.restoreModules();
 }
 
 /**

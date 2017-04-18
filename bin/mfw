@@ -26,7 +26,7 @@ commander.command('install <module>')
   .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
   .action(installService);
 
-commander.command('update <module>')
+commander.command('update [module]')
   .description('Update microservice')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
@@ -52,6 +52,9 @@ if (process.argv.length == 2) {
   commander.outputHelp();
 }
 
+/**
+ * Process setup option.
+ */
 function setupDir(dir, options) {
   if (!dir) {
     dir = process.cwd();
@@ -65,6 +68,9 @@ function setupDir(dir, options) {
   MFWCli.setup(resolve, envName);
 }
 
+/**
+ * Process install option.
+ */
 function installService(service, options) {
   var rootDIR = options.root;
   if (!rootDIR) {
@@ -78,6 +84,9 @@ function installService(service, options) {
   MFWCli.install(resolve, service, options.save, envName);
 }
 
+/**
+ * Process update option.
+ */
 function updateService(service, options) {
   var rootDIR = options.root;
   if (!rootDIR) {
@@ -88,7 +97,10 @@ function updateService(service, options) {
   if (!envName) {
     envName = '';
   }
-  MFWCli.update(resolve, service, envName);
+  if(service) {
+    return MFWCli.update(resolve, service, envName);
+  }
+  MFWCli.updateAll(resolve, envName);
 }
 
 function uninstallService(service, options) {
@@ -104,6 +116,9 @@ function uninstallService(service, options) {
   MFWCli.uninstall(resolve, service, options.save, envName);
 }
 
+/**
+ * Process env option.
+ */
 function envList(envName, options) {
   var rootDIR = options.root;
   if (!rootDIR) {
@@ -122,6 +137,9 @@ function envList(envName, options) {
   }
 }
 
+/**
+ * Find env packages.
+ */
 function findEnvironments(startPath, isExtended){
 
   var results = {};
