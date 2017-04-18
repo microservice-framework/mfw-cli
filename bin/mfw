@@ -39,7 +39,7 @@ commander.command('uninstall <module>')
   .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
   .action(uninstallService);
 
-commander.command('env')
+commander.command('env [env]')
   .description('setup directory')
   .option('-l, --list', 'List enabled Environments.')
   .option('-e, --extended', 'Print extended info')
@@ -104,13 +104,20 @@ function uninstallService(service, options) {
   MFWCli.uninstall(resolve, service, options.save, envName);
 }
 
-function envList(options) {
+function envList(envName, options) {
   var rootDIR = options.root;
   if (!rootDIR) {
     rootDIR = process.cwd();
   }
+  var resolve = path.resolve(rootDIR);
+  if(envName) {
+    if(envName == 'default') {
+      envName = '';
+    }
+    return MFWCli.envSet(resolve, envName);
+  }
   if(options.list) {
-    var envs = findEnvironments(rootDIR, options.extended);
+    var envs = findEnvironments(resolve, options.extended);
     console.log(envs);
   }
 }

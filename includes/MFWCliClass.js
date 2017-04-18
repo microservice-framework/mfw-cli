@@ -97,6 +97,18 @@ MFWCliClass.prototype.uninstall = function(RootDirectory, module, isSaveOption, 
 }
 
 /**
+ * Env set method.
+ *   reinit services directory.
+ */
+MFWCliClass.prototype.envSet = function(RootDirectory, envName) {
+  var self = this;
+  self.RootDirectory = RootDirectory;
+  self.envName = envName;
+  fs.emptyDirSync(self.RootDirectory + '/services/');
+  self.restoreModules();
+}
+
+/**
  * Get executed when Root directory get checked for existance.
  */
 MFWCliClass.prototype.prepareModule = function(module, callback) {
