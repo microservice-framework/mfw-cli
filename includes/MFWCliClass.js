@@ -3,11 +3,13 @@
 const EventEmitter = require('events').EventEmitter;
 const util = require('util');
 const fs = require('fs-extra');
-const Message = require('../includes/message.js');
 const tmp = require('tmp');
 const exec = require('child_process').exec;
 const path = require('path');
 const prompt = require('prompt');
+
+const Message = require('../includes/message.js');
+const tokenGenerate = require('./token-generate.js');
 
 prompt.message = '';
 /**
@@ -48,17 +50,11 @@ MFWCliClass.prototype.install = function(RootDirectory, module) {
   var self = this;
   self.RootDirectory = RootDirectory;
 
-  var nameArray = module.split('/');
-  var shortName = nameArray.pop();
-  self.module = {
-    full: module,
-    short: shortName,
-    installDir: self.RootDirectory + '/services/' + shortName
-  }
-
-  self.on('isModuleExists', self.isModuleExists);
-  self.on('isModuleDownloaded', self.isModuleDownloaded);
-  self.checkModule(self.module);
+  self.prepareModule(module, function(){
+    self.on('isModuleExists', self.isModuleExists);
+    self.on('isModuleDownloaded', self.isModuleDownloaded);
+    self.checkModule(self.module);
+  });
 }
 
 /**
@@ -69,20 +65,37 @@ MFWCliClass.prototype.update = function(RootDirectory, module) {
   var self = this;
   self.RootDirectory = RootDirectory;
 
-  var nameArray = module.split('/');
-  var shortName = nameArray.pop();
-  self.module = {
-    full: module,
-    short: shortName,
-    installDir: self.RootDirectory + '/services/' + shortName,
-    envFile: self.RootDirectory + '/configs/' + shortName + '.env',
-  }
-
-  self.on('isModuleExists', self.isModuleExistsForUpdate);
-  self.on('isModuleDownloaded', self.isModuleDownloadedForUpdate);
-  self.checkModule(self.module);
+  self.prepareModule(module, function(){
+    self.on('isModuleExists', self.isModuleExistsForUpdate);
+    self.on('isModuleDownloaded', self.isModuleDownloadedForUpdate);
+    self.checkModule(self.module);
+  });
 }
+/**
+ * Get executed when Root directory get checked for existance.
+ */
+MFWCliClass.prototype.prepareModule = function(module, callback) {
+  var self = this;
+  fs.stat(module, function(err, stats){
+    if(!err) {
+      module = path.resolve(module);;
+    }
+    var nameArray = module.split('/');
+    var shortName = nameArray.pop();
 
+    if(!shortName || shortName == '') {
+      shortName = nameArray.pop();
+    }
+
+    self.module = {
+      full: module,
+      short: shortName,
+      installDir: self.RootDirectory + '/services/' + shortName,
+      envFile: self.RootDirectory + '/configs/' + shortName + '.env',
+    }
+    callback();
+  });
+}
 /**
  * Get executed when Root directory get checked for existance.
  */
@@ -306,6 +319,7 @@ MFWCliClass.prototype.checkDirectory = function(subDir) {
 MFWCliClass.prototype.downloadPackage = function(module) {
   var self = this;
   process.chdir(module.tmpDir.name);
+  console.log(module);
   exec('npm pack ' + module.full + '|xargs tar -xzpf', function(err, stdout, stderr) {
     if (err) {
       return self.emit('isModuleDownloaded', err, module);
@@ -313,8 +327,8 @@ MFWCliClass.prototype.downloadPackage = function(module) {
     fs.copy(module.tmpDir.name + '/package/',
       module.installDir, { overwrite: true },
       function(err) {
-        fs.emptyDirSync(module.tmpDir.name);
-        module.tmpDir.removeCallback();
+        //fs.emptyDirSync(module.tmpDir.name);
+        //module.tmpDir.removeCallback();
         return self.emit('isModuleDownloaded', err, module);
       });
   });
@@ -348,10 +362,10 @@ MFWCliClass.prototype.configureModule = function(module) {
       for(var name in result){
         var value = result[name];
         if (typeof value === "number") {
-          envContent = envContent + name.toUpperCase + '=' + value;
+          envContent = envContent + name.toUpperCase() + '=' + value + "\n";
         }
         else {
-          envContent = envContent + name.toUpperCase + '="' + value + '"';
+          envContent = envContent + name.toUpperCase() + '="' + value + '"' + "\n";
         }
       }
       self.writeEnvFile(module, envContent);
@@ -365,12 +379,37 @@ MFWCliClass.prototype.configureModule = function(module) {
 MFWCliClass.prototype.setModuleDefaults = function(schema) {
   var self = this;
   var packageJSONFile = path.resolve(self.RootDirectory + '/package.json');
-  self.packageDefault = JSON.parse(fs.readFileSync(packageJSONFile));
+  var packageDefault = JSON.parse(fs.readFileSync(packageJSONFile));
   for(var name in schema.properties) {
     if(packageDefault[name]) {
       schema.properties[name].default = packageDefault[name];
     }
   }
+  //set SECURE_KEY
+  schema.properties.secure_key = {
+    type: "string",
+    description: "SECURE_KEY",
+    message: "must be more than 6 symbols",
+    conform: function(secureKey) {
+      return (secureKey.length > 6);
+    },
+    default: tokenGenerate(24),
+    required: true
+  }
+  schema.properties.pidfile = {
+    type: "string",
+    description: "PID file path",
+    default: self.RootDirectory + '/pids/' + self.module.short + '.pid',
+    required: true
+  }
+
+  schema.properties.logfile = {
+    type: "string",
+    description: "Log file path",
+    default: self.RootDirectory + '/logs/' + self.module.short + '.log',
+    required: true
+  }
+
   return schema;
 }
 
