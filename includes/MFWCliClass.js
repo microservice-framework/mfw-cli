@@ -73,6 +73,21 @@ MFWCliClass.prototype.update = function(RootDirectory, module) {
     self.checkModule(module);
   });
 }
+
+/**
+ * Uninstall method.
+ *   Install service to ROOTDIR/services/SERVICE_NAME directory.
+ */
+MFWCliClass.prototype.uninstall = function(RootDirectory, module) {
+  var self = this;
+  self.RootDirectory = RootDirectory;
+  self.on('isModuleExists', self.isModuleExistsForUninstall);
+
+  self.prepareModule(module, function(module) {
+    self.checkModule(module);
+  });
+}
+
 /**
  * Get executed when Root directory get checked for existance.
  */
@@ -129,6 +144,27 @@ MFWCliClass.prototype.isModuleExists = function(err, type, module) {
   }
   module.tmpDir = tmp.dirSync();
   self.downloadPackage(module);
+}
+
+/**
+ * Get executed when Root directory get checked for existance.
+ */
+MFWCliClass.prototype.isModuleExistsForUninstall = function(err, type, module) {
+  var self = this;
+  if (err) {
+    return self.message('error', err.message);
+  }
+
+  if (!type) {
+    return self.message('error', module.installDir + ' is missing');
+  }
+  fs.remove(module.installDir, function(err) {
+    if (err) {
+      return self.message('error', err.message);
+    }
+    self.removeModuleFromPackageJSON(module);
+    return self.message('ok', module.short + ' deleted');
+  });
 }
 
 /**
@@ -315,7 +351,7 @@ MFWCliClass.prototype.configureModule = function(module) {
   fs.stat(envSchema, function(err, stats) {
     if (err) {
       self.writeEnvFile(module);
-      self.updatePackageJSON(module);
+      self.addModuleToPackageJSON(module);
       return self.message('warning', envSchema
         + ' is missing. Update ' + module.envFile + ' before use ' + module.short);
     }
@@ -342,7 +378,7 @@ MFWCliClass.prototype.configureModule = function(module) {
         }
       }
       self.writeEnvFile(module, envContent);
-      self.updatePackageJSON(module);
+      self.addModuleToPackageJSON(module);
     });
   });
 }
@@ -426,7 +462,7 @@ MFWCliClass.prototype.generatePackageJSON = function() {
 /**
  * Update Package JSON.
  */
-MFWCliClass.prototype.updatePackageJSON = function(module) {
+MFWCliClass.prototype.addModuleToPackageJSON = function(module) {
   var self = this;
 
   var packageJSONFile = self.RootDirectory + '/package.json';
@@ -441,6 +477,34 @@ MFWCliClass.prototype.updatePackageJSON = function(module) {
     packageJSON.services = {}
   }
   packageJSON.services[module.short] = module.full;
+
+  fs.writeFile(packageJSONFile, JSON.stringify(packageJSON, null, 2), function(err) {
+    if (err) {
+      return self.message('error', err.message);
+    }
+  });
+}
+
+/**
+ * Update Package JSON.
+ */
+MFWCliClass.prototype.removeModuleFromPackageJSON = function(module) {
+  var self = this;
+
+  var packageJSONFile = self.RootDirectory + '/package.json';
+  var packageJSON = '';
+
+  try {
+    packageJSON = JSON.parse(fs.readFileSync(packageJSONFile));
+  } catch (e) {
+    return self.message('error', e.message);
+  }
+  if (!packageJSON.services) {
+    packageJSON.services = {}
+  }
+  if(packageJSON.services[module.short]) {
+    delete packageJSON.services[module.short];
+  }
 
   fs.writeFile(packageJSONFile, JSON.stringify(packageJSON, null, 2), function(err) {
     if (err) {
