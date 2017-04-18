@@ -19,6 +19,8 @@
   "homepage": "https://github.com/microservice-framework/mfw-cli#readme",
   "dependencies": {
     "colors": "^1.1.2",
-    "commander": "^2.9.0"
+    "commander": "^2.9.0",
+    "fs-extra": "^2.1.2",
+    "tmp": "0.0.31"
   }
 }
