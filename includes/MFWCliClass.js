@@ -47,9 +47,10 @@ MFWCliClass.prototype.setup = function(RootDirectory) {
  * Install method.
  *   Install service to ROOTDIR/services/SERVICE_NAME directory.
  */
-MFWCliClass.prototype.install = function(RootDirectory, module) {
+MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption) {
   var self = this;
   self.RootDirectory = RootDirectory;
+  self.isSaveOption = isSaveOption;
 
   self.on('isModuleExists', self.isModuleExists);
   self.on('isModuleDownloaded', self.isModuleDownloaded);
@@ -78,9 +79,10 @@ MFWCliClass.prototype.update = function(RootDirectory, module) {
  * Uninstall method.
  *   Install service to ROOTDIR/services/SERVICE_NAME directory.
  */
-MFWCliClass.prototype.uninstall = function(RootDirectory, module) {
+MFWCliClass.prototype.uninstall = function(RootDirectory, module, isSaveOption) {
   var self = this;
   self.RootDirectory = RootDirectory;
+  self.isSaveOption = isSaveOption;
   self.on('isModuleExists', self.isModuleExistsForUninstall);
 
   self.prepareModule(module, function(module) {
@@ -162,6 +164,7 @@ MFWCliClass.prototype.isModuleExistsForUninstall = function(err, type, module) {
     if (err) {
       return self.message('error', err.message);
     }
+
     self.removeModuleFromPackageJSON(module);
     return self.message('ok', module.short + ' deleted');
   });
@@ -464,7 +467,9 @@ MFWCliClass.prototype.generatePackageJSON = function() {
  */
 MFWCliClass.prototype.addModuleToPackageJSON = function(module) {
   var self = this;
-
+  if(!self.isSaveOption) {
+    return;
+  }
   var packageJSONFile = self.RootDirectory + '/package.json';
   var packageJSON = '';
 
@@ -490,7 +495,9 @@ MFWCliClass.prototype.addModuleToPackageJSON = function(module) {
  */
 MFWCliClass.prototype.removeModuleFromPackageJSON = function(module) {
   var self = this;
-
+  if(!self.isSaveOption) {
+    return;
+  }
   var packageJSONFile = self.RootDirectory + '/package.json';
   var packageJSON = '';
 
