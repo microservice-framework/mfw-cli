@@ -7,6 +7,7 @@ const tmp = require('tmp');
 const exec = require('child_process').exec;
 const path = require('path');
 const prompt = require('prompt');
+const colors    = require('colors/safe');
 
 const Message = require('../includes/message.js');
 const tokenGenerate = require('./token-generate.js');
@@ -192,7 +193,7 @@ MFWCliClass.prototype.isModuleDownloaded = function(err, module) {
   if (err) {
     return self.message('error', err.message);
   }
-  console.log('\tinstalling dependencies for ' + module.short);
+  self.progressMessage('installing dependencies for ' + module.short);
   return exec('npm install --prefix ' + module.installDir, function(error, stdout, stderr) {
     if (error) {
       self.message('error', module.full
@@ -288,13 +289,13 @@ MFWCliClass.prototype.checkDirectory = function(subDir) {
  */
 MFWCliClass.prototype.downloadPackage = function(module) {
   var self = this;
-  console.log('\tdownloading ' + module.short);
+  self.progressMessage('downloading ' + module.short);
   exec('cd ' + module.tmpDir.name+ ' && npm pack ' + module.full + '|xargs tar -xzpf',
   function(err, stdout, stderr) {
     if (err) {
       return self.emit('isModuleDownloaded', err, module);
     }
-    console.log('\tcopiyng ' + module.short + ' to ' + module.installDir);
+    self.progressMessage('copiyng ' + module.short + ' to ' + module.installDir);
     fs.copy(module.tmpDir.name + '/package/',
       module.installDir, { overwrite: true },
       function(err) {
@@ -452,6 +453,7 @@ MFWCliClass.prototype.updatePackageJSON = function(module) {
  * check if Module configured.
  */
 MFWCliClass.prototype.checkModuleConfigured = function(module) {
+  var self = this;
   fs.stat(module.envFile, function(err, stats) {
     if (err) {
       return self.configureModule(module);
@@ -508,6 +510,12 @@ MFWCliClass.prototype.message = function(type, message) {
   self.messages[type].push(message);
 }
 
+/**
+ * Print Messages.
+ */
+MFWCliClass.prototype.progressMessage = function(message) {
+  console.log(colors.gray('\t-\t' +message));
+}
 /**
  * Print Messages.
  */
