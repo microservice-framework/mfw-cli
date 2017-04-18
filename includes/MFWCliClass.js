@@ -50,10 +50,11 @@ MFWCliClass.prototype.install = function(RootDirectory, module) {
   var self = this;
   self.RootDirectory = RootDirectory;
 
-  self.prepareModule(module, function() {
-    self.on('isModuleExists', self.isModuleExists);
-    self.on('isModuleDownloaded', self.isModuleDownloaded);
-    self.checkModule(self.module);
+  self.on('isModuleExists', self.isModuleExists);
+  self.on('isModuleDownloaded', self.isModuleDownloaded);
+
+  self.prepareModule(module, function(module) {
+    self.checkModule(module);
   });
 }
 
@@ -64,11 +65,11 @@ MFWCliClass.prototype.install = function(RootDirectory, module) {
 MFWCliClass.prototype.update = function(RootDirectory, module) {
   var self = this;
   self.RootDirectory = RootDirectory;
+  self.on('isModuleExists', self.isModuleExistsForUpdate);
+  self.on('isModuleDownloaded', self.isModuleDownloadedForUpdate);
 
-  self.prepareModule(module, function() {
-    self.on('isModuleExists', self.isModuleExistsForUpdate);
-    self.on('isModuleDownloaded', self.isModuleDownloadedForUpdate);
-    self.checkModule(self.module);
+  self.prepareModule(module, function(module) {
+    self.checkModule(module);
   });
 }
 /**
@@ -87,13 +88,13 @@ MFWCliClass.prototype.prepareModule = function(module, callback) {
       shortName = nameArray.pop();
     }
 
-    self.module = {
+    module = {
       full: module,
       short: shortName,
       installDir: self.RootDirectory + '/services/' + shortName,
       envFile: self.RootDirectory + '/configs/' + shortName + '.env',
     }
-    callback();
+    callback(module);
   });
 }
 /**
@@ -141,6 +142,14 @@ MFWCliClass.prototype.isRootExists = function(err, type) {
   if (type) {
     self.message('warning', self.RootDirectory + ' already exists.');
     self.installGitIgnore();
+    fs.stat(self.RootDirectory + '/package.json', function(err, stats) {
+      if (err) {
+        return;
+      }
+      if (!stats.isDirectory()) {
+        self.restoreModules();
+      }
+    });
     return self.checkSkel();
   }
 
@@ -151,71 +160,6 @@ MFWCliClass.prototype.isRootExists = function(err, type) {
     self.installGitIgnore();
     self.generatePackageJSON();
     return self.checkSkel();
-  });
-}
-
-/**
- * Generate Package JSON.
- */
-MFWCliClass.prototype.generatePackageJSON = function() {
-  var self = this;
-  prompt.start();
-  try {
-    var packageSchemaFile = path.resolve(__dirname + '/../templates/package.schema.json');
-    var schema = JSON.parse(fs.readFileSync(packageSchemaFile));
-  } catch(e) {
-    return self.message('error', e.message);
-  }
-  prompt.get(schema, function(err, result) {
-    if (err) {
-      return self.message('error', e.message);
-    }
-    var packageJSONFile = self.RootDirectory + '/package.json';
-    fs.writeFile(packageJSONFile, JSON.stringify(result, null, 2), function(err) {
-      if (err) {
-        return self.message('error', err.message);
-      }
-    });
-  });
-}
-
-/**
- * Generate Package JSON.
- */
-MFWCliClass.prototype.updatePackageJSON = function(module) {
-  var self = this;
-
-  var packageJSONFile = self.RootDirectory + '/package.json';
-  var packageJSON = '';
-
-  try {
-    packageJSON = JSON.parse(fs.readFileSync(packageJSONFile));
-  } catch (e) {
-    return self.message('error', e.message);
-  }
-  if(!packageJSON.services) {
-    packageJSON.services = {}
-  }
-  packageJSON.services[module.short] = module.full;
-
-  fs.writeFile(packageJSONFile, JSON.stringify(packageJSON, null, 2), function(err) {
-    if (err) {
-      return self.message('error', err.message);
-    }
-  });
-}
-
-/**
- * Install .gitignore from template.
- */
-MFWCliClass.prototype.installGitIgnore = function() {
-  var self = this;
-  var gitIgnore = path.resolve(__dirname + '/../templates/gitignore');
-  fs.copy(gitIgnore, self.RootDirectory + '/.gitignore', { overwrite: true }, function(err) {
-    if (err) {
-      return self.message('error', err.message);
-    }
-    return self.message('ok', '.gitignore copied');
   });
 }
 
@@ -248,16 +192,15 @@ MFWCliClass.prototype.isModuleDownloaded = function(err, module) {
   if (err) {
     return self.message('error', err.message);
   }
-  process.chdir(module.installDir);
-  return exec('npm install', function(error, stdout, stderr) {
+  console.log('\tinstalling dependencies for ' + module.short);
+  return exec('npm install --prefix ' + module.installDir, function(error, stdout, stderr) {
     if (error) {
       self.message('error', module.full
         + ' installed, but `npm install` failed:' + error.message);
     }
-    self.configureModule(module);
+    self.checkModuleConfigured(module);
     return self.message('ok', module.full + ' installed.');
   });
-
 }
 
 /**
@@ -268,8 +211,7 @@ MFWCliClass.prototype.isModuleDownloadedForUpdate = function(err, module) {
   if (err) {
     return self.message('error', err.message);
   }
-  process.chdir(module.installDir);
-  return exec('npm update', function(error, stdout, stderr) {
+  return exec('npm update --prefix ' + module.installDir, function(error, stdout, stderr) {
     if (error) {
       return self.message('error', module.full
         + ' updated, but `npm update` failed:' + error.message);
@@ -346,11 +288,13 @@ MFWCliClass.prototype.checkDirectory = function(subDir) {
  */
 MFWCliClass.prototype.downloadPackage = function(module) {
   var self = this;
-  process.chdir(module.tmpDir.name);
-  exec('npm pack ' + module.full + '|xargs tar -xzpf', function(err, stdout, stderr) {
+  console.log('\tdownloading ' + module.short);
+  exec('cd ' + module.tmpDir.name+ ' && npm pack ' + module.full + '|xargs tar -xzpf',
+  function(err, stdout, stderr) {
     if (err) {
       return self.emit('isModuleDownloaded', err, module);
     }
+    console.log('\tcopiyng ' + module.short + ' to ' + module.installDir);
     fs.copy(module.tmpDir.name + '/package/',
       module.installDir, { overwrite: true },
       function(err) {
@@ -381,7 +325,7 @@ MFWCliClass.prototype.configureModule = function(module) {
     } catch(e) {
       return self.message('error', e.message);
     }
-    schema = self.setModuleDefaults(schema);
+    schema = self.setModuleDefaults(schema, module);
     prompt.get(schema, function(err, result) {
       if (err) {
         return self.message('error', e.message);
@@ -405,7 +349,7 @@ MFWCliClass.prototype.configureModule = function(module) {
 /**
  * Download Package.
  */
-MFWCliClass.prototype.setModuleDefaults = function(schema) {
+MFWCliClass.prototype.setModuleDefaults = function(schema, module) {
   var self = this;
   var packageJSONFile = path.resolve(self.RootDirectory + '/package.json');
   var packageDefault = JSON.parse(fs.readFileSync(packageJSONFile));
@@ -428,13 +372,13 @@ MFWCliClass.prototype.setModuleDefaults = function(schema) {
   schema.properties.pidfile = {
     type: 'string',
     description: 'PID file path',
-    default: self.RootDirectory + '/pids/' + self.module.short + '.pid',
+    default: self.RootDirectory + '/pids/' + module.short + '.pid',
     required: true
   }
   schema.properties.logfile = {
     type: 'string',
     description: 'Log file path',
-    default: self.RootDirectory + '/logs/' + self.module.short + '.log',
+    default: self.RootDirectory + '/logs/' + module.short + '.log',
     required: true
   }
 
@@ -451,6 +395,109 @@ MFWCliClass.prototype.writeEnvFile = function(module, content) {
   }
   fs.writeFileSync(module.envFile, content);
   fs.linkSync(module.envFile, module.installDir + '/.env');
+}
+
+/**
+ * Generate Package JSON.
+ */
+MFWCliClass.prototype.generatePackageJSON = function() {
+  var self = this;
+  prompt.start();
+  try {
+    var packageSchemaFile = path.resolve(__dirname + '/../templates/package.schema.json');
+    var schema = JSON.parse(fs.readFileSync(packageSchemaFile));
+  } catch(e) {
+    return self.message('error', e.message);
+  }
+  prompt.get(schema, function(err, result) {
+    if (err) {
+      return self.message('error', e.message);
+    }
+    var packageJSONFile = self.RootDirectory + '/package.json';
+    fs.writeFile(packageJSONFile, JSON.stringify(result, null, 2), function(err) {
+      if (err) {
+        return self.message('error', err.message);
+      }
+    });
+  });
+}
+
+/**
+ * Update Package JSON.
+ */
+MFWCliClass.prototype.updatePackageJSON = function(module) {
+  var self = this;
+
+  var packageJSONFile = self.RootDirectory + '/package.json';
+  var packageJSON = '';
+
+  try {
+    packageJSON = JSON.parse(fs.readFileSync(packageJSONFile));
+  } catch (e) {
+    return self.message('error', e.message);
+  }
+  if (!packageJSON.services) {
+    packageJSON.services = {}
+  }
+  packageJSON.services[module.short] = module.full;
+
+  fs.writeFile(packageJSONFile, JSON.stringify(packageJSON, null, 2), function(err) {
+    if (err) {
+      return self.message('error', err.message);
+    }
+  });
+}
+
+/**
+ * check if Module configured.
+ */
+MFWCliClass.prototype.checkModuleConfigured = function(module) {
+  fs.stat(module.envFile, function(err, stats) {
+    if (err) {
+      return self.configureModule(module);
+    }
+    return fs.linkSync(module.envFile, module.installDir + '/.env');
+  });
+}
+
+/**
+ * Generate Package JSON.
+ */
+MFWCliClass.prototype.restoreModules = function() {
+  var self = this;
+  var packageJSONFile = self.RootDirectory + '/package.json';
+  var packageJSON = '';
+
+  try {
+    packageJSON = JSON.parse(fs.readFileSync(packageJSONFile));
+  } catch (e) {
+    return self.message('error', e.message);
+  }
+  if (packageJSON.services) {
+    self.on('isModuleExists', self.isModuleExists);
+    self.on('isModuleDownloaded', self.isModuleDownloaded);
+
+    for (var shortName in packageJSON.services) {
+      var fullName = packageJSON.services[shortName];
+      self.prepareModule(fullName, function(module) {
+        self.checkModule(module);
+      });
+    }
+  }
+}
+
+/**
+ * Install .gitignore from template.
+ */
+MFWCliClass.prototype.installGitIgnore = function() {
+  var self = this;
+  var gitIgnore = path.resolve(__dirname + '/../templates/gitignore');
+  fs.copy(gitIgnore, self.RootDirectory + '/.gitignore', { overwrite: true }, function(err) {
+    if (err) {
+      return self.message('error', err.message);
+    }
+    return self.message('ok', '.gitignore copied');
+  });
 }
 
 /**
