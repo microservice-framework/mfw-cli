@@ -21,7 +21,9 @@ function MFWCliClass() {
     error: [],
     warning: []
   };
-
+  process.on('beforeExit', function(){
+    self.printMessages();
+  });
 }
 util.inherits(MFWCliClass, EventEmitter);
 
@@ -35,7 +37,6 @@ MFWCliClass.prototype.setup = function(RootDirectory) {
 
   self.on('isRootExists', self.isRootExists);
   self.on('isDirExists', self.isDirExists);
-  self.on('done', self.printMessages);
   self.checkRootDirectory();
 }
 
@@ -57,7 +58,6 @@ MFWCliClass.prototype.install = function(RootDirectory, module) {
 
   self.on('isModuleExists', self.isModuleExists);
   self.on('isModuleDownloaded', self.isModuleDownloaded);
-  self.on('done', self.printMessages);
   self.checkModule(self.module);
 }
 
@@ -79,7 +79,6 @@ MFWCliClass.prototype.update = function(RootDirectory, module) {
 
   self.on('isModuleExists', self.isModuleExistsForUpdate);
   self.on('isModuleDownloaded', self.isModuleDownloadedForUpdate);
-  self.on('done', self.printMessages);
   self.checkModule(self.module);
 }
 
