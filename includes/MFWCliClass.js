@@ -172,6 +172,27 @@ MFWCliClass.prototype.envSet = function(RootDirectory, envName) {
 }
 
 /**
+ * Env set method.
+ *   reinit services directory.
+ */
+MFWCliClass.prototype.start = function(RootDirectory, serviceName) {
+  var self = this;
+  self.RootDirectory = RootDirectory;
+  self.envName = self.getEnvName();
+  if (self.envName != '') {
+    self.progressMessage('Env:' + self.envName);
+  }
+
+  var packageJSON = self.getPackageJSON();
+  if()
+  if(serviceName == 'all') {
+    
+  } else {
+    
+  }
+}
+
+/**
  * Get executed when Root directory get checked for existance.
  */
 MFWCliClass.prototype.prepareModule = function(module, callback) {
@@ -478,9 +499,8 @@ MFWCliClass.prototype.configureModule = function(module) {
  */
 MFWCliClass.prototype.setModuleDefaults = function(schema, module) {
   var self = this;
-  var packageJSONFile = self.getPackageJSONPath();
-  var packageJSONFile = path.resolve(packageJSONFile);
-  var packageDefault = JSON.parse(fs.readFileSync(packageJSONFile));
+
+  var packageDefault = self.getPackageJSON();
   for (var name in schema.properties) {
     if (packageDefault[name]) {
       schema.properties[name].default = packageDefault[name];
@@ -567,13 +587,8 @@ MFWCliClass.prototype.addModuleToPackageJSON = function(module) {
     return;
   }
   var packageJSONFile = self.getPackageJSONPath();
-  var packageJSON = '';
+  var packageJSON = self.getPackageJSON();
 
-  try {
-    packageJSON = JSON.parse(fs.readFileSync(packageJSONFile));
-  } catch (e) {
-    return self.message('error', e.message);
-  }
   if (!packageJSON.services) {
     packageJSON.services = {}
   }
@@ -595,13 +610,8 @@ MFWCliClass.prototype.removeModuleFromPackageJSON = function(module) {
     return;
   }
   var packageJSONFile = self.getPackageJSONPath();
-  var packageJSON = '';
+  var packageJSON = self.getPackageJSON();
 
-  try {
-    packageJSON = JSON.parse(fs.readFileSync(packageJSONFile));
-  } catch (e) {
-    return self.message('error', e.message);
-  }
   if (!packageJSON.services) {
     packageJSON.services = {}
   }
@@ -627,6 +637,7 @@ MFWCliClass.prototype.getEnvName = function() {
   }
   return currentEnv;
 }
+
 /**
  * Get package.json path.
  */
@@ -637,6 +648,21 @@ MFWCliClass.prototype.getPackageJSONPath = function() {
     packageJSONFile = self.RootDirectory + '/' + self.envName + '.package.json';
   }
   return packageJSONFile;
+}
+
+/**
+ * Get package.json parsed Object.
+ */
+MFWCliClass.prototype.getPackageJSON = function() {
+  var packageJSON = '';
+
+  try {
+    packageJSON = JSON.parse(fs.readFileSync(self.getPackageJSONPath()));
+  } catch (e) {
+    self.message('error', e.message);
+    packageJSON = {};
+  }
+  return packageJSON;
 }
 /**
  * check if Module configured.
@@ -661,14 +687,8 @@ MFWCliClass.prototype.checkModuleConfigured = function(module) {
  */
 MFWCliClass.prototype.restoreModules = function() {
   var self = this;
-  var packageJSONFile = self.getPackageJSONPath();
-  var packageJSON = '';
+  var packageJSON = self.getPackageJSON();
 
-  try {
-    packageJSON = JSON.parse(fs.readFileSync(packageJSONFile));
-  } catch (e) {
-    return self.message('error', e.message);
-  }
   if (packageJSON.services) {
     self.on('isModuleExists', self.isModuleExists);
     self.on('isModuleDownloaded', self.isModuleDownloaded);

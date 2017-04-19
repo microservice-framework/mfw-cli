@@ -98,7 +98,10 @@ function uninstallService(service, options) {
  */
 function startService(service, options) {
   var rootDIR = getRoot(options);
-
+  if (!service) {
+    service = 'all';
+  }
+  MFWCli.start(rootDIR, service);
 }
 
 /**
