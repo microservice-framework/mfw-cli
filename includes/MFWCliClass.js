@@ -5,6 +5,7 @@ const util = require('util');
 const fs = require('fs-extra');
 const tmp = require('tmp');
 const exec = require('child_process').exec;
+const spawn = require('child_process').spawn;
 const path = require('path');
 const prompt = require('prompt');
 const colors    = require('colors/safe');
@@ -175,20 +176,90 @@ MFWCliClass.prototype.envSet = function(RootDirectory, envName) {
  * Env set method.
  *   reinit services directory.
  */
-MFWCliClass.prototype.start = function(RootDirectory, serviceName) {
+MFWCliClass.prototype.start = function(RootDirectory, serviceName, devel) {
   var self = this;
   self.RootDirectory = RootDirectory;
   self.envName = self.getEnvName();
+  self.devel = devel;
+
+  var servicesDir = self.RootDirectory + '/services/';
+
   if (self.envName != '') {
     self.progressMessage('Env:' + self.envName);
   }
 
-  var packageJSON = self.getPackageJSON();
-  if()
   if(serviceName == 'all') {
-    
+    var files = fs.readdirSync(servicesDir);
+    for(var i in files) {
+      var filename = files[i];
+      var stat = fs.statSync(servicesDir + filename);
+      if (stat.isDirectory()){
+        self.startService(filename);
+      }
+    }
   } else {
-    
+    self.startService(serviceName);
+  }
+}
+
+/**
+ * Env set method.
+ *   reinit services directory.
+ */
+MFWCliClass.prototype.startService = function(serviceName) {
+  var self = this;
+  var serviceDir = self.RootDirectory + '/services/' + serviceName;
+
+  var modulePackageJSON = '';
+
+  try {
+    modulePackageJSON = JSON.parse(fs.readFileSync(serviceDir + '/package.json'));
+  } catch (e) {
+    self.message('error', 'Failed to start ' + serviceName);
+    return self.message('error', e.message);
+  }
+
+  if(!modulePackageJSON.scripts || modulePackageJSON.scripts.length == 0) {
+    return self.message('error', 'Failed to start ' + serviceName + ' - no scripts defined');
+  }
+  var listToStart = [];
+  for(var name in modulePackageJSON.scripts) {
+    if(name.indexOf('start') != -1) {
+      if(self.devel) {
+        if(name.indexOf('devel') != -1) {
+          listToStart.push(name);
+        }
+      } else {
+        if(name.indexOf('devel') == -1) {
+          listToStart.push(name);
+        }
+      }
+    }
+  }
+
+  if(listToStart.length == 0) {
+    if(self.devel) {
+      self.progressMessage(serviceName + ' don\'t have start-devel');
+    } else {
+      self.progressMessage(serviceName + ' don\'t have start');
+    }
+    return;
+  }
+  for(var i in listToStart){
+    var name = listToStart[i];
+    if(self.devel) {
+      self.progressMessage('starting ' + serviceName + ':' + name + ' in devel mode');
+      var child = spawn('npm', ['run', name ], {cwd: serviceDir, stdio: 'inherit'});
+    } else {
+      self.progressMessage('starting '  + serviceName + ':' + name);
+      var child = spawn('npm', ['run', name ], {cwd: serviceDir, detached: true, stdio: 'ignore'});
+      if(child.exitCode) {
+        self.message('error', 'Died with code' + child.exitCode);
+      }else {
+        self.message('ok', name +' started');
+      }
+      child.unref();
+    }
   }
 }
 
@@ -341,7 +412,7 @@ MFWCliClass.prototype.isModuleDownloaded = function(err, module) {
     return self.message('error', err.message);
   }
   self.progressMessage('installing dependencies for ' + module.short);
-  return exec('npm install --prefix ' + module.installDir, function(error, stdout, stderr) {
+  return exec('npm install', {cwd: module.installDir}, function(error, stdout, stderr) {
     if (error) {
       self.message('error', module.full
         + ' installed, but `npm install` failed:' + error.message);
@@ -359,7 +430,7 @@ MFWCliClass.prototype.isModuleDownloadedForUpdate = function(err, module) {
   if (err) {
     return self.message('error', err.message);
   }
-  return exec('npm update --prefix ' + module.installDir, function(error, stdout, stderr) {
+  return exec('npm update',{cwd: module.installDir}, function(error, stdout, stderr) {
     if (error) {
       return self.message('error', module.full
         + ' updated, but `npm update` failed:' + error.message);
@@ -437,7 +508,7 @@ MFWCliClass.prototype.checkDirectory = function(subDir) {
 MFWCliClass.prototype.downloadPackage = function(module) {
   var self = this;
   self.progressMessage('downloading ' + module.short);
-  exec('cd ' + module.tmpDir.name + ' && npm pack ' + module.full + '|xargs tar -xzpf',
+  exec('npm pack ' + module.full + '|xargs tar -xzpf', {cwd: module.tmpDir.name},
   function(err, stdout, stderr) {
     if (err) {
       return self.emit('isModuleDownloaded', err, module);
@@ -654,6 +725,7 @@ MFWCliClass.prototype.getPackageJSONPath = function() {
  * Get package.json parsed Object.
  */
 MFWCliClass.prototype.getPackageJSON = function() {
+  var self = this;
   var packageJSON = '';
 
   try {
@@ -664,6 +736,8 @@ MFWCliClass.prototype.getPackageJSON = function() {
   }
   return packageJSON;
 }
+
+
 /**
  * check if Module configured.
  */

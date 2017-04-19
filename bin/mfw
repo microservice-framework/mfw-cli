@@ -44,7 +44,7 @@ commander.command('env [env]')
 commander.command('start [module]')
   .description('Start microservice(s)')
   .option('-r, --root <dir>', 'Optionaly root directory')
-  .option('-d, --debug', 'Optionaly debug mode')
+  .option('-d, --devel', 'Optionaly devel mode')
   .action(startService);
 
 commander.parse(process.argv);
@@ -101,7 +101,7 @@ function startService(service, options) {
   if (!service) {
     service = 'all';
   }
-  MFWCli.start(rootDIR, service);
+  MFWCli.start(rootDIR, service, options.devel);
 }
 
 /**
