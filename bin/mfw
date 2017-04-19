@@ -12,8 +12,6 @@ const exec = require('child_process').exec;
 
 commander.version(pkg.version).usage('[cmd] [module]');
 
-//commander.option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
-
 commander.command('setup [dir]')
   .description('setup directory')
   .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
@@ -86,7 +84,7 @@ function updateService(service, options) {
     rootDIR = process.cwd();
   }
   var resolve = path.resolve(rootDIR);
-  if(service) {
+  if (service) {
     return MFWCli.update(resolve, service);
   }
   MFWCli.updateAll(resolve);
@@ -110,13 +108,13 @@ function envList(envName, options) {
     rootDIR = process.cwd();
   }
   var resolve = path.resolve(rootDIR);
-  if(envName) {
-    if(envName == 'default') {
+  if (envName) {
+    if (envName == 'default') {
       envName = '';
     }
     return MFWCli.envSet(resolve, envName);
   }
-  if(options.list) {
+  if (options.list) {
     var envs = findEnvironments(resolve, options.extended);
     console.log(envs);
   }
@@ -125,22 +123,22 @@ function envList(envName, options) {
 /**
  * Find env packages.
  */
-function findEnvironments(startPath, isExtended){
+function findEnvironments(startPath, isExtended) {
 
   var results = {};
   var filter = 'package.json';
 
-  if (!fs.existsSync(startPath)){
+  if (!fs.existsSync(startPath)) {
     return;
   }
 
   var files = fs.readdirSync(startPath);
-  for( var i=0; i < files.length; i++){
+  for (var i = 0; i < files.length; i++) {
     var filename = files[i];
     var index = filename.indexOf(filter);
     var packageJSON = '';
-    if(index >= 0 ) {
-      if(isExtended) {
+    if (index >= 0) {
+      if (isExtended) {
         try {
           packageJSON = JSON.parse(fs.readFileSync(path.join(startPath,filename)));
         } catch (e) {
@@ -150,10 +148,10 @@ function findEnvironments(startPath, isExtended){
         packageJSON = filename;
       }
     }
-    if(index == 0) {
+    if (index == 0) {
       results['default'] = packageJSON;
     }
-    if(index > 0){
+    if (index > 0) {
       var env = filename.substring(0,index - 1);
       results[env] = packageJSON;
     }

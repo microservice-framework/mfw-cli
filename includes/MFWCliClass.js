@@ -38,7 +38,7 @@ MFWCliClass.prototype.setup = function(RootDirectory, envName) {
   var self = this;
   self.RootDirectory = RootDirectory;
   self.envName = envName;
-  if(self.envName != '') {
+  if (self.envName != '') {
     self.progressMessage('Env:' + self.envName);
   }
 
@@ -56,7 +56,7 @@ MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption) {
   self.RootDirectory = RootDirectory;
   self.isSaveOption = isSaveOption;
   self.envName = self.getEnvName();
-  if(self.envName != '') {
+  if (self.envName != '') {
     self.progressMessage('Env:' + self.envName);
   }
 
@@ -76,7 +76,7 @@ MFWCliClass.prototype.update = function(RootDirectory, module) {
   var self = this;
   self.RootDirectory = RootDirectory;
   self.envName = self.getEnvName();
-  if(self.envName != '') {
+  if (self.envName != '') {
     self.progressMessage('Env:' + self.envName);
   }
 
@@ -96,7 +96,7 @@ MFWCliClass.prototype.updateAll = function(RootDirectory) {
   var self = this;
   self.RootDirectory = RootDirectory;
   self.envName = self.getEnvName();
-  if(self.envName != '') {
+  if (self.envName != '') {
     self.progressMessage('Env:' + self.envName);
   }
   self.restoreModules();
@@ -111,7 +111,7 @@ MFWCliClass.prototype.uninstall = function(RootDirectory, module, isSaveOption) 
   self.RootDirectory = RootDirectory;
   self.isSaveOption = isSaveOption;
   self.envName = self.getEnvName();
-  if(self.envName != '') {
+  if (self.envName != '') {
     self.progressMessage('Env:' + self.envName);
   }
 
@@ -137,21 +137,21 @@ MFWCliClass.prototype.envSet = function(RootDirectory, envName) {
   } catch(e) {
     self.message('warning', 'failed to read .env file');
   }
-  if(currentEnv == self.envName) {
-    if(self.envName == '') {
+  if (currentEnv == self.envName) {
+    if (self.envName == '') {
       return self.message('error', 'Already in: default');
     }
     return self.message('error', 'Already in: ' + self.envName);
   }
   var servicesDir = self.RootDirectory + '/services';
-  if(currentEnv) {
+  if (currentEnv) {
     fs.removeSync(self.RootDirectory + '/.services.' + currentEnv);
     fs.renameSync(servicesDir,
     self.RootDirectory + '/.services.' + currentEnv);
   }
   var newEnvService = self.RootDirectory + '/.services.' + envName;
   fs.stat(newEnvService, function(err, stats) {
-    if(err) {
+    if (err) {
       return fs.mkdir(servicesDir, function(err) {
         if (err) {
           return self.message('error', err.message);
@@ -165,7 +165,7 @@ MFWCliClass.prototype.envSet = function(RootDirectory, envName) {
     fs.renameSync(newEnvService, servicesDir);
   });
   fs.writeFileSync(self.RootDirectory + '/.env', envName);
-  if(envName == '') {
+  if (envName == '') {
     return self.message('ok', 'switched to: default');
   }
   self.message('ok', 'switched to: ' + envName);
@@ -193,7 +193,7 @@ MFWCliClass.prototype.prepareModule = function(module, callback) {
       installDir: self.RootDirectory + '/services/' + shortName,
       envFile: self.RootDirectory + '/configs/' + shortName + '.env',
     }
-    if(self.envName != ''){
+    if (self.envName != '') {
       module.envFile = self.RootDirectory + '/configs/' + self.envName
         + '.' + shortName + '.env';
     }
@@ -416,7 +416,7 @@ MFWCliClass.prototype.checkDirectory = function(subDir) {
 MFWCliClass.prototype.downloadPackage = function(module) {
   var self = this;
   self.progressMessage('downloading ' + module.short);
-  exec('cd ' + module.tmpDir.name+ ' && npm pack ' + module.full + '|xargs tar -xzpf',
+  exec('cd ' + module.tmpDir.name + ' && npm pack ' + module.full + '|xargs tar -xzpf',
   function(err, stdout, stderr) {
     if (err) {
       return self.emit('isModuleDownloaded', err, module);
@@ -523,7 +523,7 @@ MFWCliClass.prototype.writeEnvFile = function(module, content) {
   }
   fs.writeFileSync(module.envFile, content);
   fs.stat(module.installDir + '/.env', function(err, stats) {
-    if(err) {
+    if (err) {
       return fs.linkSync(module.envFile, module.installDir + '/.env');
     }
   });
@@ -536,7 +536,7 @@ MFWCliClass.prototype.generatePackageJSON = function() {
   var self = this;
   var packageJSONFile = self.getPackageJSONPath();
   fs.stat(packageJSONFile, function(err, stats) {
-    if(err) {
+    if (err) {
       prompt.start();
       try {
         var packageSchemaFile = path.resolve(__dirname + '/../templates/package.schema.json');
@@ -563,7 +563,7 @@ MFWCliClass.prototype.generatePackageJSON = function() {
  */
 MFWCliClass.prototype.addModuleToPackageJSON = function(module) {
   var self = this;
-  if(!self.isSaveOption) {
+  if (!self.isSaveOption) {
     return;
   }
   var packageJSONFile = self.getPackageJSONPath();
@@ -591,7 +591,7 @@ MFWCliClass.prototype.addModuleToPackageJSON = function(module) {
  */
 MFWCliClass.prototype.removeModuleFromPackageJSON = function(module) {
   var self = this;
-  if(!self.isSaveOption) {
+  if (!self.isSaveOption) {
     return;
   }
   var packageJSONFile = self.getPackageJSONPath();
@@ -605,7 +605,7 @@ MFWCliClass.prototype.removeModuleFromPackageJSON = function(module) {
   if (!packageJSON.services) {
     packageJSON.services = {}
   }
-  if(packageJSON.services[module.short]) {
+  if (packageJSON.services[module.short]) {
     delete packageJSON.services[module.short];
   }
 
@@ -633,7 +633,7 @@ MFWCliClass.prototype.getEnvName = function() {
 MFWCliClass.prototype.getPackageJSONPath = function() {
   var self = this;
   var packageJSONFile = self.RootDirectory + '/package.json';
-  if(self.envName != ''){
+  if (self.envName != '') {
     packageJSONFile = self.RootDirectory + '/' + self.envName + '.package.json';
   }
   return packageJSONFile;
@@ -649,7 +649,7 @@ MFWCliClass.prototype.checkModuleConfigured = function(module) {
     }
     self.addModuleToPackageJSON(module);
     fs.stat(module.installDir + '/.env', function(err, stats) {
-      if(err) {
+      if (err) {
         return fs.linkSync(module.envFile, module.installDir + '/.env');
       }
     });
@@ -688,7 +688,7 @@ MFWCliClass.prototype.restoreModules = function() {
 MFWCliClass.prototype.installGitIgnore = function() {
   var self = this;
   fs.stat(self.RootDirectory + '/.gitignore', function(err, stats) {
-    if(err) {
+    if (err) {
       var gitIgnore = path.resolve(__dirname + '/../templates/gitignore');
       fs.copy(gitIgnore, self.RootDirectory + '/.gitignore', { overwrite: true }, function(err) {
         if (err) {
@@ -714,7 +714,7 @@ MFWCliClass.prototype.message = function(type, message) {
  * Print Messages.
  */
 MFWCliClass.prototype.progressMessage = function(message) {
-  console.log(colors.gray('\t-\t' +message));
+  console.log(colors.gray('\t-\t' + message));
 }
 /**
  * Print Messages.
