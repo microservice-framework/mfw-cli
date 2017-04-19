@@ -41,6 +41,12 @@ commander.command('env [env]')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .action(envList);
 
+commander.command('start [module]')
+  .description('Start microservice(s)')
+  .option('-r, --root <dir>', 'Optionaly root directory')
+  .option('-d, --debug', 'Optionaly debug mode')
+  .action(startService);
+
 commander.parse(process.argv);
 
 if (process.argv.length == 2) {
@@ -50,74 +56,77 @@ if (process.argv.length == 2) {
 /**
  * Process setup option.
  */
-function setupDir(dir, options) {
-  if (!dir) {
-    dir = process.cwd();
+function setupDir(rootDIR, options) {
+  if (!rootDIR) {
+    rootDIR = process.cwd();
   }
-  var resolve = path.resolve(dir);
+  var rootDIR = path.resolve(rootDIR);
   var envName = options.env;
   if (!envName) {
     envName = '';
   }
 
-  MFWCli.setup(resolve, envName);
+  MFWCli.setup(rootDIR, envName);
 }
 
 /**
  * Process install option.
  */
 function installService(service, options) {
-  var rootDIR = options.root;
-  if (!rootDIR) {
-    rootDIR = process.cwd();
-  }
-  var resolve = path.resolve(rootDIR);
-  MFWCli.install(resolve, service, options.save);
+  var rootDIR = getRoot(options);
+  MFWCli.install(rootDIR, service, options.save);
 }
 
 /**
  * Process update option.
  */
 function updateService(service, options) {
-  var rootDIR = options.root;
-  if (!rootDIR) {
-    rootDIR = process.cwd();
-  }
-  var resolve = path.resolve(rootDIR);
+  var rootDIR = getRoot(options);
   if (service) {
-    return MFWCli.update(resolve, service);
+    return MFWCli.update(rootDIR, service);
   }
-  MFWCli.updateAll(resolve);
+  MFWCli.updateAll(rootDIR);
 }
 
 function uninstallService(service, options) {
-  var rootDIR = options.root;
-  if (!rootDIR) {
-    rootDIR = process.cwd();
-  }
-  var resolve = path.resolve(rootDIR);
-  MFWCli.uninstall(resolve, service, options.save);
+  var rootDIR = getRoot(options);
+  MFWCli.uninstall(rootDIR, service, options.save);
+}
+
+/**
+ * Process env option.
+ */
+function startService(service, options) {
+  var rootDIR = getRoot(options);
+
 }
 
 /**
  * Process env option.
  */
 function envList(envName, options) {
-  var rootDIR = options.root;
-  if (!rootDIR) {
-    rootDIR = process.cwd();
-  }
-  var resolve = path.resolve(rootDIR);
+  var rootDIR = getRoot(options);
   if (envName) {
     if (envName == 'default') {
       envName = '';
     }
-    return MFWCli.envSet(resolve, envName);
+    return MFWCli.envSet(rootDIR, envName);
   }
   if (options.list) {
-    var envs = findEnvironments(resolve, options.extended);
+    var envs = findEnvironments(rootDIR, options.extended);
     console.log(envs);
   }
+}
+
+/**
+ * get Root directory.
+ */
+function getRoot(options){
+  var rootDIR = options.root;
+  if (!rootDIR) {
+    rootDIR = process.cwd();
+  }
+  return path.resolve(rootDIR);
 }
 
 /**
