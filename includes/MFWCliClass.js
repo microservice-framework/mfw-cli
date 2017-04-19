@@ -225,31 +225,32 @@ MFWCliClass.prototype.startService = function(serviceName) {
   var listToStart = [];
   for(var name in modulePackageJSON.scripts) {
     if(name.indexOf('start') != -1) {
-      if(self.devel) {
-        if(name.indexOf('devel') != -1) {
-          listToStart.push(name);
-        }
-      } else {
-        if(name.indexOf('devel') == -1) {
-          listToStart.push(name);
-        }
-      }
+      listToStart.push(name);
     }
   }
 
   if(listToStart.length == 0) {
-    if(self.devel) {
-      self.progressMessage(serviceName + ' don\'t have start-devel');
-    } else {
-      self.progressMessage(serviceName + ' don\'t have start');
-    }
+    self.progressMessage(serviceName + ' don\'t have start');
     return;
   }
   for(var i in listToStart){
     var name = listToStart[i];
     if(self.devel) {
       self.progressMessage('starting ' + serviceName + ':' + name + ' in devel mode');
-      var child = spawn('npm', ['run', name ], {cwd: serviceDir, stdio: 'inherit'});
+      var env = process.env;
+      env.DEBUG = '*';
+      env.DEVEL = true;
+      var child = spawn('npm', ['run', name ], {
+        cwd: serviceDir,
+        stdio: 'inherit',
+        env: env
+      });
+      child.on('error', (err) => {
+        console.log(err);
+      });
+      child.on('exit', (code) => {
+        console.log('Child exited with code ' + code);
+      });
     } else {
       self.progressMessage('starting '  + serviceName + ':' + name);
       var child = spawn('npm', ['run', name ], {cwd: serviceDir, detached: true, stdio: 'ignore'});
@@ -442,6 +443,7 @@ MFWCliClass.prototype.isRootExists = function(err, type) {
     if (err) {
       return self.message('error', err.message);
     }
+    fs.writeFileSync(self.RootDirectory + '/.env', self.envName);
     self.installGitIgnore();
     self.generatePackageJSON();
     return self.checkSkel();
