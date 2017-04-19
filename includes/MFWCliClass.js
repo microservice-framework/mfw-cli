@@ -38,6 +38,9 @@ MFWCliClass.prototype.setup = function(RootDirectory, envName) {
   var self = this;
   self.RootDirectory = RootDirectory;
   self.envName = envName;
+  if(self.envName != '') {
+    self.progressMessage('Env:' + self.envName);
+  }
 
   self.on('isRootExists', self.isRootExists);
   self.on('isDirExists', self.isDirExists);
@@ -48,11 +51,14 @@ MFWCliClass.prototype.setup = function(RootDirectory, envName) {
  * Install method.
  *   Install service to ROOTDIR/services/SERVICE_NAME directory.
  */
-MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption, envName) {
+MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption) {
   var self = this;
   self.RootDirectory = RootDirectory;
   self.isSaveOption = isSaveOption;
-  self.envName = envName;
+  self.envName = self.getEnvName();
+  if(self.envName != '') {
+    self.progressMessage('Env:' + self.envName);
+  }
 
   self.on('isModuleExists', self.isModuleExists);
   self.on('isModuleDownloaded', self.isModuleDownloaded);
@@ -66,10 +72,13 @@ MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption, en
  * Update method.
  *   Update service in ROOTDIR/services/SERVICE_NAME directory.
  */
-MFWCliClass.prototype.update = function(RootDirectory, module, envName) {
+MFWCliClass.prototype.update = function(RootDirectory, module) {
   var self = this;
   self.RootDirectory = RootDirectory;
-  self.envName = envName;
+  self.envName = self.getEnvName();
+  if(self.envName != '') {
+    self.progressMessage('Env:' + self.envName);
+  }
 
   self.on('isModuleExists', self.isModuleExistsForUpdate);
   self.on('isModuleDownloaded', self.isModuleDownloadedForUpdate);
@@ -83,10 +92,13 @@ MFWCliClass.prototype.update = function(RootDirectory, module, envName) {
  * Install method.
  *   Install service to ROOTDIR/services/SERVICE_NAME directory.
  */
-MFWCliClass.prototype.updateAll = function(RootDirectory, envName) {
+MFWCliClass.prototype.updateAll = function(RootDirectory) {
   var self = this;
   self.RootDirectory = RootDirectory;
-  self.envName = envName;
+  self.envName = self.getEnvName();
+  if(self.envName != '') {
+    self.progressMessage('Env:' + self.envName);
+  }
   self.restoreModules();
 }
 
@@ -94,11 +106,14 @@ MFWCliClass.prototype.updateAll = function(RootDirectory, envName) {
  * Uninstall method.
  *   Install service to ROOTDIR/services/SERVICE_NAME directory.
  */
-MFWCliClass.prototype.uninstall = function(RootDirectory, module, isSaveOption, envName) {
+MFWCliClass.prototype.uninstall = function(RootDirectory, module, isSaveOption) {
   var self = this;
   self.RootDirectory = RootDirectory;
   self.isSaveOption = isSaveOption;
-  self.envName = envName;
+  self.envName = self.getEnvName();
+  if(self.envName != '') {
+    self.progressMessage('Env:' + self.envName);
+  }
 
   self.on('isModuleExists', self.isModuleExistsForUninstall);
 
@@ -115,8 +130,45 @@ MFWCliClass.prototype.envSet = function(RootDirectory, envName) {
   var self = this;
   self.RootDirectory = RootDirectory;
   self.envName = envName;
-  fs.emptyDirSync(self.RootDirectory + '/services/');
-  self.restoreModules();
+
+  var currentEnv = false;
+  try {
+    currentEnv = fs.readFileSync(self.RootDirectory + '/.env');
+  } catch(e) {
+    self.message('warning', 'failed to read .env file');
+  }
+  if(currentEnv == self.envName) {
+    if(self.envName == '') {
+      return self.message('error', 'Already in: default');
+    }
+    return self.message('error', 'Already in: ' + self.envName);
+  }
+  var servicesDir = self.RootDirectory + '/services';
+  if(currentEnv) {
+    fs.removeSync(self.RootDirectory + '/.services.' + currentEnv);
+    fs.renameSync(servicesDir,
+    self.RootDirectory + '/.services.' + currentEnv);
+  }
+  var newEnvService = self.RootDirectory + '/.services.' + envName;
+  fs.stat(newEnvService, function(err, stats) {
+    if(err) {
+      return fs.mkdir(servicesDir, function(err) {
+        if (err) {
+          return self.message('error', err.message);
+        }
+        self.restoreModules();
+      });
+    }
+    if (!stats.isDirectory()) {
+      return self.message('error', newEnvService + 'is not directory. Something wrong here.');
+    }
+    fs.renameSync(newEnvService, servicesDir);
+  });
+  fs.writeFileSync(self.RootDirectory + '/.env', envName);
+  if(envName == '') {
+    return self.message('ok', 'switched to: default');
+  }
+  self.message('ok', 'switched to: ' + envName);
 }
 
 /**
@@ -564,6 +616,17 @@ MFWCliClass.prototype.removeModuleFromPackageJSON = function(module) {
   });
 }
 
+MFWCliClass.prototype.getEnvName = function() {
+  var self = this;
+  var currentEnv;
+  try {
+    currentEnv = fs.readFileSync(self.RootDirectory + '/.env');
+  } catch(e) {
+    currentEnv = '';
+    self.message('warning', 'failed to read .env file');
+  }
+  return currentEnv;
+}
 /**
  * Get package.json path.
  */

@@ -9,3 +9,9 @@ pids/*
 
 # Services
 services/*
+
+
+# .env file with env name
+.env
+
+.services

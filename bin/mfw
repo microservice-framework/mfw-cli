@@ -23,20 +23,17 @@ commander.command('install <module>')
   .description('Install microservice')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .option('-s, --save', 'Save microservice information')
-  .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
   .action(installService);
 
 commander.command('update [module]')
   .description('Update microservice')
   .option('-r, --root <dir>', 'Optionaly root directory')
-  .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
   .action(updateService);
 
 commander.command('uninstall <module>')
   .description('Uninstall microservice')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .option('-s, --save', 'Save microservice information')
-  .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
   .action(uninstallService);
 
 commander.command('env [env]')
@@ -77,11 +74,7 @@ function installService(service, options) {
     rootDIR = process.cwd();
   }
   var resolve = path.resolve(rootDIR);
-  var envName = options.env;
-  if (!envName) {
-    envName = '';
-  }
-  MFWCli.install(resolve, service, options.save, envName);
+  MFWCli.install(resolve, service, options.save);
 }
 
 /**
@@ -93,14 +86,10 @@ function updateService(service, options) {
     rootDIR = process.cwd();
   }
   var resolve = path.resolve(rootDIR);
-  var envName = options.env;
-  if (!envName) {
-    envName = '';
-  }
   if(service) {
-    return MFWCli.update(resolve, service, envName);
+    return MFWCli.update(resolve, service);
   }
-  MFWCli.updateAll(resolve, envName);
+  MFWCli.updateAll(resolve);
 }
 
 function uninstallService(service, options) {
@@ -109,11 +98,7 @@ function uninstallService(service, options) {
     rootDIR = process.cwd();
   }
   var resolve = path.resolve(rootDIR);
-  var envName = options.env;
-  if (!envName) {
-    envName = '';
-  }
-  MFWCli.uninstall(resolve, service, options.save, envName);
+  MFWCli.uninstall(resolve, service, options.save);
 }
 
 /**
