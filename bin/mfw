@@ -47,6 +47,10 @@ commander.command('start [module]')
   .option('-d, --devel', 'Optionaly devel mode')
   .action(startService);
 
+commander.command('stop [module]')
+  .description('Stop microservice(s)')
+  .option('-r, --root <dir>', 'Optionaly root directory')
+  .action(stopService);
 commander.parse(process.argv);
 
 if (process.argv.length == 2) {
@@ -102,6 +106,17 @@ function startService(service, options) {
     service = 'all';
   }
   MFWCli.start(rootDIR, service, options.devel);
+}
+
+/**
+ * Process env option.
+ */
+function stopService(service, options) {
+  var rootDIR = getRoot(options);
+  if (!service) {
+    service = 'all';
+  }
+  MFWCli.stop(rootDIR, service);
 }
 
 /**

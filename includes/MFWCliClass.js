@@ -264,6 +264,72 @@ MFWCliClass.prototype.startService = function(serviceName) {
 }
 
 /**
+ * Env set method.
+ *   reinit services directory.
+ */
+MFWCliClass.prototype.stop = function(RootDirectory, serviceName) {
+  var self = this;
+  self.RootDirectory = RootDirectory;
+  self.envName = self.getEnvName();
+
+  var servicesDir = self.RootDirectory + '/services/';
+
+  if (self.envName != '') {
+    self.progressMessage('Env:' + self.envName);
+  }
+
+  if(serviceName == 'all') {
+    var files = fs.readdirSync(servicesDir);
+    for(var i in files) {
+      var filename = files[i];
+      var stat = fs.statSync(servicesDir + filename);
+      if (stat.isDirectory()){
+        self.stopService(filename);
+      }
+    }
+  } else {
+    self.stopService(serviceName);
+  }
+}
+
+/**
+ * Env set method.
+ *   reinit services directory.
+ */
+MFWCliClass.prototype.stopService = function(serviceName) {
+  var self = this;
+  var serviceDir = self.RootDirectory + '/services/' + serviceName;
+
+  var modulePackageJSON = '';
+
+  try {
+    modulePackageJSON = JSON.parse(fs.readFileSync(serviceDir + '/package.json'));
+  } catch (e) {
+    self.message('error', 'Failed to start ' + serviceName);
+    return self.message('error', e.message);
+  }
+
+  if(!modulePackageJSON.scripts || modulePackageJSON.scripts.length == 0) {
+    return self.message('error', 'Failed to start ' + serviceName + ' - no scripts defined');
+  }
+  var listToStop = [];
+  for(var name in modulePackageJSON.scripts) {
+    if(name.indexOf('stop') != -1) {
+      listToStop.push(name);
+    }
+  }
+
+  if(listToStop.length == 0) {
+    self.progressMessage(serviceName + ' don\'t have stop');
+    return;
+  }
+  for(var i in listToStop){
+    var name = listToStop[i];
+    self.progressMessage('stopping ' + serviceName + ':' + name);
+    var child = spawn('npm', ['run', name ], {cwd: serviceDir, stdio: 'inherit'});
+  }
+}
+/**
  * Get executed when Root directory get checked for existance.
  */
 MFWCliClass.prototype.prepareModule = function(module, callback) {
