@@ -52,10 +52,11 @@ MFWCliClass.prototype.setup = function(RootDirectory, envName) {
  * Install method.
  *   Install service to ROOTDIR/services/SERVICE_NAME directory.
  */
-MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption) {
+MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption, isDefaultValues) {
   var self = this;
   self.RootDirectory = RootDirectory;
   self.isSaveOption = isSaveOption;
+  self.isDefaultValues = isDefaultValues;
   self.envName = self.getEnvName();
   if (self.envName != '') {
     self.progressMessage('Env:' + self.envName);
@@ -131,45 +132,23 @@ MFWCliClass.prototype.envSet = function(RootDirectory, envName) {
   var self = this;
   self.RootDirectory = RootDirectory;
   self.envName = envName;
+  self.isDefaultValues = true;
 
-  var currentEnv = false;
+  self.currentEnv = false;
   try {
-    currentEnv = fs.readFileSync(self.RootDirectory + '/.env');
+    self.currentEnv = fs.readFileSync(self.RootDirectory + '/.env');
   } catch(e) {
     self.message('warning', 'failed to read .env file');
   }
-  if (currentEnv == self.envName) {
+  if (self.currentEnv == self.envName) {
     if (self.envName == '') {
       return self.message('error', 'Already in: default');
     }
     return self.message('error', 'Already in: ' + self.envName);
   }
-  var servicesDir = self.RootDirectory + '/services';
-  if (currentEnv) {
-    fs.removeSync(self.RootDirectory + '/.services.' + currentEnv);
-    fs.renameSync(servicesDir,
-    self.RootDirectory + '/.services.' + currentEnv);
-  }
-  var newEnvService = self.RootDirectory + '/.services.' + envName;
-  fs.stat(newEnvService, function(err, stats) {
-    if (err) {
-      return fs.mkdir(servicesDir, function(err) {
-        if (err) {
-          return self.message('error', err.message);
-        }
-        self.restoreModules();
-      });
-    }
-    if (!stats.isDirectory()) {
-      return self.message('error', newEnvService + 'is not directory. Something wrong here.');
-    }
-    fs.renameSync(newEnvService, servicesDir);
-  });
-  fs.writeFileSync(self.RootDirectory + '/.env', envName);
-  if (envName == '') {
-    return self.message('ok', 'switched to: default');
-  }
-  self.message('ok', 'switched to: ' + envName);
+  self.on('isPackageJSON', self.isPackageJSON);
+  self.checkPackageJSON();
+
 }
 
 /**
@@ -335,9 +314,26 @@ MFWCliClass.prototype.stopService = function(serviceName) {
  */
 MFWCliClass.prototype.prepareModule = function(module, callback) {
   var self = this;
+
+  var packageJSON = self.getPackageJSON();
+  if(packageJSON.services && packageJSON.services[module]) {
+    var shortName = module;
+    var moduleInfo = {
+      full: packageJSON.services[shortName],
+      short: shortName,
+      installDir: self.RootDirectory + '/services/' + shortName,
+      envFile: self.RootDirectory + '/configs/' + shortName + '.env',
+    }
+    if (self.envName != '') {
+      moduleInfo.envFile = self.RootDirectory + '/configs/' + self.envName
+        + '.' + shortName + '.env';
+    }
+    return callback(moduleInfo);
+  }
+
   fs.stat(module, function(err, stats) {
     if (!err) {
-      module = path.resolve(module);;
+      module = path.resolve(module);
     }
     var nameArray = module.split('/');
     var shortName = nameArray.pop();
@@ -412,6 +408,45 @@ MFWCliClass.prototype.isModuleExistsForUninstall = function(err, type, module) {
     self.removeModuleFromPackageJSON(module);
     return self.message('ok', module.short + ' deleted');
   });
+}
+
+MFWCliClass.prototype.isPackageJSON = function(err, packageJSONPath) {
+  var self = this;
+  if(err) {
+    console.log(err);
+    return self.message('error', err.message);
+  }
+
+  var servicesDir = self.RootDirectory + '/services';
+  if (self.currentEnv) {
+    fs.removeSync(self.RootDirectory + '/.services.' + self.currentEnv);
+    fs.renameSync(servicesDir,
+    self.RootDirectory + '/.services.' + self.currentEnv);
+  }
+
+  var newEnvService = self.RootDirectory + '/.services.' + self.envName;
+
+  fs.stat(newEnvService, function(err, stats) {
+    if (err) {
+      return fs.mkdir(servicesDir, function(err) {
+        if (err) {
+          return self.message('error', err.message);
+        }
+        self.restoreModules();
+      });
+    }
+    if (!stats.isDirectory()) {
+      return self.message('error', newEnvService + 'is not directory. Something wrong here.');
+    }
+    fs.renameSync(newEnvService, servicesDir);
+  });
+
+  fs.writeFileSync(self.RootDirectory + '/.env', self.envName);
+
+  if (self.envName == '') {
+    return self.message('ok', 'switched to: default');
+  }
+  self.message('ok', 'switched to: ' + self.envName);
 }
 
 /**
@@ -605,31 +640,50 @@ MFWCliClass.prototype.configureModule = function(module) {
       return self.message('warning', envSchema
         + ' is missing. Update ' + module.envFile + ' before use ' + module.short);
     }
-    prompt.start();
     try {
       var moduleSchemaFile = path.resolve(envSchema);
       var schema = JSON.parse(fs.readFileSync(moduleSchemaFile));
     } catch(e) {
       return self.message('error', e.message);
     }
+
     schema = self.setModuleDefaults(schema, module);
-    prompt.get(schema, function(err, result) {
-      if (err) {
-        return self.message('error', e.message);
-      }
-      // Convert JSON to ENV file format
-      var envContent = '';
-      for (var name in result) {
-        var value = result[name];
+
+    if(!self.isDefaultValues) {
+      prompt.start();
+      prompt.get(schema, function(err, result) {
+        if (err) {
+          return self.message('error', e.message);
+        }
+        // Convert JSON to ENV file format
+        var envContent = '';
+        for (var name in result) {
+          var value = result[name];
+          if (typeof value === 'number') {
+            envContent = envContent + name.toUpperCase() + '=' + value + '\n';
+          } else {
+            envContent = envContent + name.toUpperCase() + '="' + value + '"' + '\n';
+          }
+        }
+        self.writeEnvFile(module, envContent);
+        self.addModuleToPackageJSON(module);
+      });
+      return;
+    }
+    // Set defaults.
+    var envContent = '';
+    for (var name in schema.properties) {
+      if (schema.properties[name] && schema.properties[name].default) {
+        var value = schema.properties[name].default;
         if (typeof value === 'number') {
           envContent = envContent + name.toUpperCase() + '=' + value + '\n';
         } else {
           envContent = envContent + name.toUpperCase() + '="' + value + '"' + '\n';
         }
       }
-      self.writeEnvFile(module, envContent);
-      self.addModuleToPackageJSON(module);
-    });
+    }
+    self.writeEnvFile(module, envContent);
+    self.addModuleToPackageJSON(module);
   });
 }
 
@@ -641,8 +695,36 @@ MFWCliClass.prototype.setModuleDefaults = function(schema, module) {
 
   var packageDefault = self.getPackageJSON();
   for (var name in schema.properties) {
+    if(process.env[name.toUpperCase()]){
+      schema.properties[name].default = process.env[name.toUpperCase()];
+      continue;
+    }
     if (packageDefault[name]) {
       schema.properties[name].default = packageDefault[name];
+    }
+  }
+
+  // Replace :token: with value
+  for (var name in schema.properties) {
+    var value = schema.properties[name].default;
+    if (typeof value === 'string') {
+      var matched = value.match(/([^{]*?)\w(?=\})/gmi);
+      if(matched) {
+        for(var i in matched) {
+          var pName = matched[i];
+          var replaceWith = false;
+          if(process.env[pName.toUpperCase()]) {
+            replaceWith = process.env[pName.toUpperCase()];
+          } else if(packageDefault[pName]) {
+            replaceWith = packageDefault[pName];
+          } else if(schema.properties[pName] && schema.properties[pName].default) {
+            replaceWith = schema.properties[pName].default;
+          }
+          if(replaceWith) {
+            schema.properties[name].default = schema.properties[name].default.replace("{" + pName + "}", replaceWith);
+          }
+        }
+      }
     }
   }
 
@@ -659,13 +741,13 @@ MFWCliClass.prototype.setModuleDefaults = function(schema, module) {
   schema.properties.pidfile = {
     type: 'string',
     description: 'PID file path',
-    default: self.RootDirectory + '/pids/' + module.short + '.pid',
+    default: '../../pids/' + module.short + '.pid',
     required: true
   }
   schema.properties.logfile = {
     type: 'string',
     description: 'Log file path',
-    default: self.RootDirectory + '/logs/' + module.short + '.log',
+    default: '../../logs/' + module.short + '.log',
     required: true
   }
 
@@ -701,16 +783,20 @@ MFWCliClass.prototype.generatePackageJSON = function() {
         var packageSchemaFile = path.resolve(__dirname + '/../templates/package.schema.json');
         var schema = JSON.parse(fs.readFileSync(packageSchemaFile));
       } catch(e) {
+        self.emit('isPackageJSON', e, packageJSONFile);
         return self.message('error', e.message);
       }
       prompt.get(schema, function(err, result) {
         if (err) {
+          self.emit('isPackageJSON', err, packageJSONFile);
           return self.message('error', e.message);
         }
         fs.writeFile(packageJSONFile, JSON.stringify(result, null, 2), function(err) {
           if (err) {
+            self.emit('isPackageJSON', err, packageJSONFile);
             return self.message('error', err.message);
           }
+          self.emit('isPackageJSON', null, packageJSONFile);
         });
       });
     }
@@ -800,11 +886,25 @@ MFWCliClass.prototype.getPackageJSON = function() {
     packageJSON = JSON.parse(fs.readFileSync(self.getPackageJSONPath()));
   } catch (e) {
     self.message('error', e.message);
+    console.log(e);
     packageJSON = {};
   }
   return packageJSON;
 }
 
+/**
+ * check if Module configured.
+ */
+MFWCliClass.prototype.checkPackageJSON = function() {
+  var self = this;
+  var packageJSONFile = self.getPackageJSONPath();
+  fs.stat(packageJSONFile, function(err, stats) {
+    if (err) {
+      return self.generatePackageJSON();
+    }
+    self.emit('isPackageJSON', null, packageJSONFile);
+  });
+}
 
 /**
  * check if Module configured.
@@ -830,6 +930,8 @@ MFWCliClass.prototype.checkModuleConfigured = function(module) {
 MFWCliClass.prototype.restoreModules = function() {
   var self = this;
   var packageJSON = self.getPackageJSON();
+
+  self.isDefaultValues = true;
 
   if (packageJSON.services) {
     self.on('isModuleExists', self.isModuleExists);

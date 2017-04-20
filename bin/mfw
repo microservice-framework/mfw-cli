@@ -21,6 +21,7 @@ commander.command('install <module>')
   .description('Install microservice')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .option('-s, --save', 'Save microservice information')
+  .option('-d, --default', 'Set default values')
   .action(installService);
 
 commander.command('update [module]')
@@ -78,7 +79,7 @@ function setupDir(rootDIR, options) {
  */
 function installService(service, options) {
   var rootDIR = getRoot(options);
-  MFWCli.install(rootDIR, service, options.save);
+  MFWCli.install(rootDIR, service, options.save, options.default);
 }
 
 /**
