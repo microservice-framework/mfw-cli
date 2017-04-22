@@ -30,6 +30,7 @@ function MFWCliClass() {
     self.printMessages();
   });
 }
+
 util.inherits(MFWCliClass, EventEmitter);
 
 /**
