@@ -134,12 +134,8 @@ MFWCliClass.prototype.envSet = function(RootDirectory, envName) {
   self.envName = envName;
   self.isDefaultValues = true;
 
-  self.currentEnv = false;
-  try {
-    self.currentEnv = fs.readFileSync(self.RootDirectory + '/.env');
-  } catch(e) {
-    self.message('warning', 'failed to read .env file');
-  }
+  self.currentEnv = self.getEnvName();
+
   if (self.currentEnv == self.envName) {
     if (self.envName == '') {
       return self.message('error', 'Already in: default');
@@ -899,7 +895,8 @@ MFWCliClass.prototype.getEnvName = function() {
     currentEnv = fs.readFileSync(self.RootDirectory + '/.env');
   } catch(e) {
     currentEnv = '';
-    self.message('warning', 'failed to read .env file');
+    self.message('warning', 'failed to read .env file. Creating default one.');
+    fs.writeFileSync(self.RootDirectory + '/.env', currentEnv);
   }
   return currentEnv;
 }
