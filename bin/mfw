@@ -36,7 +36,7 @@ commander.command('uninstall <module>')
   .action(uninstallService);
 
 commander.command('env [env]')
-  .description('setup directory')
+  .description('setup env directory')
   .option('-l, --list', 'List enabled Environments.')
   .option('-e, --extended', 'Print extended info')
   .option('-r, --root <dir>', 'Optionaly root directory')
@@ -59,7 +59,7 @@ if (process.argv.length == 2) {
 }
 
 /**
- * Process setup option.
+ * Process setup command.
  */
 function setupDir(rootDIR, options) {
   if (!rootDIR) {
@@ -75,7 +75,7 @@ function setupDir(rootDIR, options) {
 }
 
 /**
- * Process install option.
+ * Process install command.
  */
 function installService(service, options) {
   var rootDIR = getRoot(options);
@@ -83,7 +83,7 @@ function installService(service, options) {
 }
 
 /**
- * Process update option.
+ * Process update command.
  */
 function updateService(service, options) {
   var rootDIR = getRoot(options);
@@ -93,13 +93,16 @@ function updateService(service, options) {
   MFWCli.updateAll(rootDIR);
 }
 
+/**
+ * Process uninstall command.
+ */
 function uninstallService(service, options) {
   var rootDIR = getRoot(options);
   MFWCli.uninstall(rootDIR, service, options.save);
 }
 
 /**
- * Process env option.
+ * Process start command.
  */
 function startService(service, options) {
   var rootDIR = getRoot(options);
@@ -110,7 +113,7 @@ function startService(service, options) {
 }
 
 /**
- * Process env option.
+ * Process stop command.
  */
 function stopService(service, options) {
   var rootDIR = getRoot(options);
@@ -121,7 +124,7 @@ function stopService(service, options) {
 }
 
 /**
- * Process env option.
+ * Process env command.
  */
 function envList(envName, options) {
   var rootDIR = getRoot(options);
@@ -138,7 +141,7 @@ function envList(envName, options) {
 }
 
 /**
- * get Root directory.
+ * Get Root directory based on command options.
  */
 function getRoot(options){
   var rootDIR = options.root;

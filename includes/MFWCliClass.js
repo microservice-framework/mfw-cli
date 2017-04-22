@@ -15,7 +15,8 @@ const tokenGenerate = require('./token-generate.js');
 
 prompt.message = '';
 /**
- * Constructor.
+ * Incapsulate logic for mfw-cli commands.
+ * @constructor.
  */
 function MFWCliClass() {
   EventEmitter.call(this);
@@ -32,8 +33,10 @@ function MFWCliClass() {
 util.inherits(MFWCliClass, EventEmitter);
 
 /**
- * Setup method.
- *   Prepare root directory.
+ * Prepare project directory.
+ *
+ * @param {string} RootDirectory - resolved path to project directory.
+ * @param {string} envName - Environment name. Helps to separate production, stage and etc.
  */
 MFWCliClass.prototype.setup = function(RootDirectory, envName) {
   var self = this;
@@ -49,8 +52,12 @@ MFWCliClass.prototype.setup = function(RootDirectory, envName) {
 }
 
 /**
- * Install method.
- *   Install service to ROOTDIR/services/SERVICE_NAME directory.
+ * Install service to ROOTDIR/services/SERVICE_NAME directory.
+ *
+ * @param {string} RootDirectory - resolved path to project directory.
+ * @param {string} module - service name. Example: @microservice-framework/microservice-router
+ * @param {boolean} isSaveOption - save service to (envname.)package.json file.
+ * @param {boolean} isDefaultValues - silent mode. Apply default values.
  */
 MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption, isDefaultValues) {
   var self = this;
@@ -71,8 +78,12 @@ MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption, is
 }
 
 /**
- * Update method.
- *   Update service in ROOTDIR/services/SERVICE_NAME directory.
+ * Update service in ROOTDIR/services/SERVICE_NAME directory.
+ *
+ * @param {string} RootDirectory - resolved path to project directory.
+ * @param {string} module - service name.
+ *   Example: @microservice-framework/microservice-router
+ *   Example: microservice-router
  */
 MFWCliClass.prototype.update = function(RootDirectory, module) {
   var self = this;
@@ -91,8 +102,9 @@ MFWCliClass.prototype.update = function(RootDirectory, module) {
 }
 
 /**
- * Install method.
- *   Install service to ROOTDIR/services/SERVICE_NAME directory.
+ * Update all services.
+ *
+ * @param {string} RootDirectory - resolved path to project directory.
  */
 MFWCliClass.prototype.updateAll = function(RootDirectory) {
   var self = this;
@@ -105,8 +117,11 @@ MFWCliClass.prototype.updateAll = function(RootDirectory) {
 }
 
 /**
- * Uninstall method.
- *   Install service to ROOTDIR/services/SERVICE_NAME directory.
+ * Uninstall service from ROOTDIR/services/SERVICE_NAME directory.
+ *
+ * @param {string} RootDirectory - resolved path to project directory.
+ * @param {string} module - service name. Example: @microservice-framework/microservice-router
+ * @param {boolean} isSaveOption - remove service from (envname.)package.json file.
  */
 MFWCliClass.prototype.uninstall = function(RootDirectory, module, isSaveOption) {
   var self = this;
@@ -125,8 +140,10 @@ MFWCliClass.prototype.uninstall = function(RootDirectory, module, isSaveOption) 
 }
 
 /**
- * Env set method.
- *   reinit services directory.
+ * Switch environment and init if new one.
+ *
+ * @param {string} RootDirectory - resolved path to project directory.
+ * @param {string} envName - environment name.
  */
 MFWCliClass.prototype.envSet = function(RootDirectory, envName) {
   var self = this;
@@ -148,14 +165,17 @@ MFWCliClass.prototype.envSet = function(RootDirectory, envName) {
 }
 
 /**
- * Env set method.
- *   reinit services directory.
+ * Start service(s).
+ *
+ * @param {string} RootDirectory - resolved path to project directory.
+ * @param {string} serviceName - service name.
+ * @param {boolean} isDevelMode - do not detach services from terminal and output log to stdout. 
  */
-MFWCliClass.prototype.start = function(RootDirectory, serviceName, devel) {
+MFWCliClass.prototype.start = function(RootDirectory, serviceName, isDevelMode) {
   var self = this;
   self.RootDirectory = RootDirectory;
   self.envName = self.getEnvName();
-  self.devel = devel;
+  self.devel = isDevelMode;
 
   var servicesDir = self.RootDirectory + '/services/';
 
@@ -178,8 +198,9 @@ MFWCliClass.prototype.start = function(RootDirectory, serviceName, devel) {
 }
 
 /**
- * Env set method.
- *   reinit services directory.
+ * Start service by name.
+ *
+ * @param {string} serviceName - service name.
  */
 MFWCliClass.prototype.startService = function(serviceName) {
   var self = this;
@@ -240,8 +261,10 @@ MFWCliClass.prototype.startService = function(serviceName) {
 }
 
 /**
- * Env set method.
- *   reinit services directory.
+ * Stop service(s).
+ *
+ * @param {string} RootDirectory - resolved path to project directory.
+ * @param {string} serviceName - service name.
  */
 MFWCliClass.prototype.stop = function(RootDirectory, serviceName) {
   var self = this;
@@ -269,8 +292,9 @@ MFWCliClass.prototype.stop = function(RootDirectory, serviceName) {
 }
 
 /**
- * Env set method.
- *   reinit services directory.
+ * Stop service by name.
+ *
+ * @param {string} serviceName - service name.
  */
 MFWCliClass.prototype.stopService = function(serviceName) {
   var self = this;
@@ -305,8 +329,12 @@ MFWCliClass.prototype.stopService = function(serviceName) {
     var child = spawn('npm', ['run', name ], {cwd: serviceDir, stdio: 'inherit'});
   }
 }
+
 /**
- * Get executed when Root directory get checked for existance.
+ * Prepare module object.
+ *
+ * @param {string} RootDirectory - resolved path to project directory.
+ * @param {function} callback - callback when module prepared.
  */
 MFWCliClass.prototype.prepareModule = function(module, callback) {
   var self = this;
@@ -360,8 +388,13 @@ MFWCliClass.prototype.prepareModule = function(module, callback) {
     callback(module);
   });
 }
+
 /**
- * Get executed when Root directory get checked for existance.
+ * Event callback for update on isModuleExists event.
+ *
+ * @param {object|null} err - if error happen on checking module for being installed.
+ * @param {boolean} type - true if module installed.
+ * @param {object} module - module data.
  */
 MFWCliClass.prototype.isModuleExistsForUpdate = function(err, type, module) {
   var self = this;
@@ -377,7 +410,11 @@ MFWCliClass.prototype.isModuleExistsForUpdate = function(err, type, module) {
 }
 
 /**
- * Get executed when Root directory get checked for existance.
+ * Event callback for install on isModuleExists event.
+ *
+ * @param {object|null} err - if error happen on checking module for being installed.
+ * @param {boolean} type - true if module installed.
+ * @param {object} module - module data.
  */
 MFWCliClass.prototype.isModuleExists = function(err, type, module) {
   var self = this;
@@ -394,7 +431,11 @@ MFWCliClass.prototype.isModuleExists = function(err, type, module) {
 }
 
 /**
- * Get executed when Root directory get checked for existance.
+ * Event callback for uninstall on isModuleExists event.
+ *
+ * @param {object|null} err - if error happen on checking module for being installed.
+ * @param {boolean} type - true if module installed.
+ * @param {object} module - module data.
  */
 MFWCliClass.prototype.isModuleExistsForUninstall = function(err, type, module) {
   var self = this;
@@ -415,6 +456,12 @@ MFWCliClass.prototype.isModuleExistsForUninstall = function(err, type, module) {
   });
 }
 
+/**
+ * Event callback on isPackageJSON event.
+ *
+ * @param {object|null} err - if error happen on checking package.json.
+ * @param {string} packageJSONPath - path to package.json (of the project).
+ */
 MFWCliClass.prototype.isPackageJSON = function(err, packageJSONPath) {
   var self = this;
   if(err) {
@@ -455,7 +502,10 @@ MFWCliClass.prototype.isPackageJSON = function(err, packageJSONPath) {
 }
 
 /**
- * Get executed when Root directory get checked for existance.
+ * Event callback on isRootExists event.
+ *
+ * @param {object|null} err - if error happen on checking project directory.
+ * @param {boolean} type - true if directory exists.
  */
 MFWCliClass.prototype.isRootExists = function(err, type) {
   var self = this;
@@ -491,7 +541,11 @@ MFWCliClass.prototype.isRootExists = function(err, type) {
 }
 
 /**
- * Get executed when Sub directory get checked for existance.
+ * Event callback on isDirExists event.
+ *
+ * @param {object|null} err - if error happen on checking directory.
+ * @param {boolean} type - true if directory exists.
+ * @param {string} dir - path to directory.
  */
 MFWCliClass.prototype.isDirExists = function(err, type, dir) {
   var self = this;
@@ -510,9 +564,11 @@ MFWCliClass.prototype.isDirExists = function(err, type, dir) {
   });
 }
 
-
 /**
- * Get executed when Module installed.
+ * Event callback for install on isModuleDownloaded event.
+ *
+ * @param {object|null} err - if error happen when downloading module.
+ * @param {object} module - module data.
  */
 MFWCliClass.prototype.isModuleDownloaded = function(err, module) {
   var self = this;
@@ -531,7 +587,10 @@ MFWCliClass.prototype.isModuleDownloaded = function(err, module) {
 }
 
 /**
- * Get executed when Module installed.
+ * Event callback for update on isModuleDownloaded event.
+ *
+ * @param {object|null} err - if error happen when downloading module.
+ * @param {object} module - module data.
  */
 MFWCliClass.prototype.isModuleDownloadedForUpdate = function(err, module) {
   var self = this;
@@ -549,7 +608,7 @@ MFWCliClass.prototype.isModuleDownloadedForUpdate = function(err, module) {
 }
 
 /**
- * Process Root directory check.
+ * Check Project root directory. Emits isRootExists.
  */
 MFWCliClass.prototype.checkRootDirectory = function() {
   var self = this;
@@ -566,7 +625,7 @@ MFWCliClass.prototype.checkRootDirectory = function() {
 }
 
 /**
- * Request subdirs check.
+ * Check Project directory skeleton (congis,services, pids, logs directories).
  */
 MFWCliClass.prototype.checkSkel = function() {
   var self = this;
@@ -577,7 +636,9 @@ MFWCliClass.prototype.checkSkel = function() {
 }
 
 /**
- * Process Sub directory check.
+ * Check module. Emits isModuleExists.
+ *
+ * @param {object} module - module data.
  */
 MFWCliClass.prototype.checkModule = function(module) {
   var self = this;
@@ -593,7 +654,7 @@ MFWCliClass.prototype.checkModule = function(module) {
 }
 
 /**
- * Process Sub directory check.
+ * Check directory. Emits isDirExists.
  */
 MFWCliClass.prototype.checkDirectory = function(subDir) {
   var self = this;
@@ -609,9 +670,10 @@ MFWCliClass.prototype.checkDirectory = function(subDir) {
   });
 }
 
-
 /**
- * Download Package.
+ * Download module.
+ *
+ * @param {object} module - module data.
  */
 MFWCliClass.prototype.downloadPackage = function(module) {
   var self = this;
@@ -633,7 +695,9 @@ MFWCliClass.prototype.downloadPackage = function(module) {
 }
 
 /**
- * Download Package.
+ * Configure module.
+ *
+ * @param {object} module - module data.
  */
 MFWCliClass.prototype.configureModule = function(module) {
   var self = this;
@@ -695,7 +759,12 @@ MFWCliClass.prototype.configureModule = function(module) {
 }
 
 /**
- * Download Package.
+ * Set default values. Patterns, ENV variables and package root variables applied.
+ *
+ * @param {object} schema - Object based on {module}/schema/install.json.
+ * @param {object} module - module data.
+ * 
+ * @return {object} schema with pre update
  */
 MFWCliClass.prototype.setModuleDefaults = function(schema, module) {
   var self = this;
@@ -769,7 +838,10 @@ MFWCliClass.prototype.setModuleDefaults = function(schema, module) {
 }
 
 /**
- * Download Package.
+ * Write configs/{env}.module.env file and link it to service/module/.env
+ *
+ * @param {object} module - module data.
+ * @param {string} content - prepared env file content.
  */
 MFWCliClass.prototype.writeEnvFile = function(module, content) {
   var self = this;
@@ -785,7 +857,8 @@ MFWCliClass.prototype.writeEnvFile = function(module, content) {
 }
 
 /**
- * Generate Package JSON.
+ * Generate Package (Project) JSON. {env.}project.json
+ * Emits isPackageJSON.
  */
 MFWCliClass.prototype.generatePackageJSON = function() {
   var self = this;
@@ -818,7 +891,11 @@ MFWCliClass.prototype.generatePackageJSON = function() {
 }
 
 /**
- * Update Package JSON.
+ * Add module data to Package ( project) JSON file.
+ * Happen if run install --save option.
+ *
+ * @param {object} module - module data.
+ * @param {object} settings - Settings for module to use them on deploy.
  */
 MFWCliClass.prototype.addModuleToPackageJSON = function(module, settings) {
   var self = this;
@@ -864,7 +941,10 @@ MFWCliClass.prototype.addModuleToPackageJSON = function(module, settings) {
 }
 
 /**
- * Update Package JSON.
+ * Remove module data to Package ( project) JSON file.
+ * Happen if run install --save option.
+ *
+ * @param {object} module - module data.
  */
 MFWCliClass.prototype.removeModuleFromPackageJSON = function(module) {
   var self = this;
@@ -888,6 +968,11 @@ MFWCliClass.prototype.removeModuleFromPackageJSON = function(module) {
   });
 }
 
+/**
+ * Get current environment name.
+ *
+ * @return {string} - enviroment name. Empty for default.
+ */
 MFWCliClass.prototype.getEnvName = function() {
   var self = this;
   var currentEnv;
@@ -902,7 +987,9 @@ MFWCliClass.prototype.getEnvName = function() {
 }
 
 /**
- * Get package.json path.
+ * Get package.json path based on current Enviroment.
+ *
+ * @return {string} - path to project package.json.
  */
 MFWCliClass.prototype.getPackageJSONPath = function() {
   var self = this;
@@ -914,7 +1001,9 @@ MFWCliClass.prototype.getPackageJSONPath = function() {
 }
 
 /**
- * Get package.json parsed Object.
+ * Get package.json object.
+ *
+ * @return {object} - {env.}package.json parsed content.
  */
 MFWCliClass.prototype.getPackageJSON = function() {
   var self = this;
@@ -931,7 +1020,7 @@ MFWCliClass.prototype.getPackageJSON = function() {
 }
 
 /**
- * check if Module configured.
+ * Check if {env.}package.json exists. Emits isPackageJSON.
  */
 MFWCliClass.prototype.checkPackageJSON = function() {
   var self = this;
@@ -945,7 +1034,9 @@ MFWCliClass.prototype.checkPackageJSON = function() {
 }
 
 /**
- * check if Module configured.
+ * Check if Module configured.
+ *
+ * @param {object} module - module data.
  */
 MFWCliClass.prototype.checkModuleConfigured = function(module) {
   var self = this;
@@ -963,7 +1054,7 @@ MFWCliClass.prototype.checkModuleConfigured = function(module) {
 }
 
 /**
- * Generate Package JSON.
+ * Restore modules (services) based on {env.}package.json.
  */
 MFWCliClass.prototype.restoreModules = function() {
   var self = this;
@@ -1020,13 +1111,14 @@ MFWCliClass.prototype.message = function(type, message) {
 }
 
 /**
- * Print Messages.
+ * Print imidiate messages.
  */
 MFWCliClass.prototype.progressMessage = function(message) {
   console.log(colors.gray('\t-\t' + message));
 }
+
 /**
- * Print Messages.
+ * Print Messages. Executed process.on('exit').
  */
 MFWCliClass.prototype.printMessages = function() {
   var self = this;
