@@ -779,7 +779,7 @@ MFWCliClass.prototype.writeEnvFile = function(module, content) {
   fs.writeFileSync(module.envFile, content);
   fs.stat(module.installDir + '/.env', function(err, stats) {
     if (err) {
-      return fs.linkSync(module.envFile, module.installDir + '/.env');
+      return fs.ensureSymlinkSync(module.envFile, module.installDir + '/.env');
     }
   });
 }
@@ -956,7 +956,7 @@ MFWCliClass.prototype.checkModuleConfigured = function(module) {
     self.addModuleToPackageJSON(module);
     fs.stat(module.installDir + '/.env', function(err, stats) {
       if (err) {
-        return fs.linkSync(module.envFile, module.installDir + '/.env');
+        return fs.ensureSymlinkSync(module.envFile, module.installDir + '/.env');
       }
     });
   });
