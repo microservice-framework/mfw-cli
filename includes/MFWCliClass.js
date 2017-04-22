@@ -318,12 +318,21 @@ MFWCliClass.prototype.prepareModule = function(module, callback) {
   var packageJSON = self.getPackageJSON();
   if(packageJSON.services && packageJSON.services[module]) {
     var shortName = module;
+    var sourceName = '';
+    if (typeof packageJSON.services[shortName] !== 'string') {
+      if(packageJSON.services[shortName].source) {
+        sourceName = packageJSON.services[shortName].source;
+      }
+    } else {
+      sourceName = packageJSON.services[shortName];
+    }
     var moduleInfo = {
-      full: packageJSON.services[shortName],
+      full: sourceName,
       short: shortName,
       installDir: self.RootDirectory + '/services/' + shortName,
       envFile: self.RootDirectory + '/configs/' + shortName + '.env',
     }
+
     if (self.envName != '') {
       moduleInfo.envFile = self.RootDirectory + '/configs/' + self.envName
         + '.' + shortName + '.env';
@@ -666,15 +675,17 @@ MFWCliClass.prototype.configureModule = function(module) {
           }
         }
         self.writeEnvFile(module, envContent);
-        self.addModuleToPackageJSON(module);
+        self.addModuleToPackageJSON(module, result);
       });
       return;
     }
     // Set defaults.
     var envContent = '';
+    var result = {};
     for (var name in schema.properties) {
       if (schema.properties[name] && schema.properties[name].default) {
         var value = schema.properties[name].default;
+        result[name] = value;
         if (typeof value === 'number') {
           envContent = envContent + name.toUpperCase() + '=' + value + '\n';
         } else {
@@ -683,7 +694,7 @@ MFWCliClass.prototype.configureModule = function(module) {
       }
     }
     self.writeEnvFile(module, envContent);
-    self.addModuleToPackageJSON(module);
+    self.addModuleToPackageJSON(module, result);
   });
 }
 
@@ -693,11 +704,41 @@ MFWCliClass.prototype.configureModule = function(module) {
 MFWCliClass.prototype.setModuleDefaults = function(schema, module) {
   var self = this;
 
+  schema.properties.secure_key = {
+    type: 'string',
+    description: 'SECURE_KEY',
+    message: 'must be more than 6 symbols',
+    conform: function(secureKey) {
+      return (secureKey.length > 6);
+    },
+    default: tokenGenerate(24),
+    required: true
+  }
+  schema.properties.pidfile = {
+    type: 'string',
+    description: 'PID file path',
+    default: '../../pids/' + module.short + '.pid',
+    required: true
+  }
+  schema.properties.logfile = {
+    type: 'string',
+    description: 'Log file path',
+    default: '../../logs/' + module.short + '.log',
+    required: true
+  }
+
   var packageDefault = self.getPackageJSON();
   for (var name in schema.properties) {
     if(process.env[name.toUpperCase()]){
       schema.properties[name].default = process.env[name.toUpperCase()];
       continue;
+    }
+    if(packageDefault.services
+      && packageDefault.services[module.short]
+      && packageDefault.services[module.short].settings
+      && packageDefault.services[module.short].settings[name]) {
+        schema.properties[name].default = packageDefault.services[module.short].settings[name];
+        continue;
     }
     if (packageDefault[name]) {
       schema.properties[name].default = packageDefault[name];
@@ -726,29 +767,6 @@ MFWCliClass.prototype.setModuleDefaults = function(schema, module) {
         }
       }
     }
-  }
-
-  schema.properties.secure_key = {
-    type: 'string',
-    description: 'SECURE_KEY',
-    message: 'must be more than 6 symbols',
-    conform: function(secureKey) {
-      return (secureKey.length > 6);
-    },
-    default: tokenGenerate(24),
-    required: true
-  }
-  schema.properties.pidfile = {
-    type: 'string',
-    description: 'PID file path',
-    default: '../../pids/' + module.short + '.pid',
-    required: true
-  }
-  schema.properties.logfile = {
-    type: 'string',
-    description: 'Log file path',
-    default: '../../logs/' + module.short + '.log',
-    required: true
   }
 
   return schema;
@@ -806,7 +824,7 @@ MFWCliClass.prototype.generatePackageJSON = function() {
 /**
  * Update Package JSON.
  */
-MFWCliClass.prototype.addModuleToPackageJSON = function(module) {
+MFWCliClass.prototype.addModuleToPackageJSON = function(module, settings) {
   var self = this;
   if (!self.isSaveOption) {
     return;
@@ -817,7 +835,30 @@ MFWCliClass.prototype.addModuleToPackageJSON = function(module) {
   if (!packageJSON.services) {
     packageJSON.services = {}
   }
-  packageJSON.services[module.short] = module.full;
+
+  if (!packageJSON.services[module.short]) {
+    packageJSON.services[module.short] = {
+      source: module.full
+    };
+    if(settings) {
+      packageJSON.services[module.short].settings = settings;
+    }
+  } else {
+    if(typeof packageJSON.services[module.short] === 'string') {
+      packageJSON.services[module.short] = {
+        source: module.full
+      };
+      if(settings) {
+        packageJSON.services[module.short].settings = settings;
+      }
+    } else {
+      packageJSON.services[module.short].source = module.full;
+      if(settings) {
+        packageJSON.services[module.short].settings = settings;
+      }
+    }
+  }
+
 
   fs.writeFile(packageJSONFile, JSON.stringify(packageJSON, null, 2), function(err) {
     if (err) {
@@ -938,7 +979,14 @@ MFWCliClass.prototype.restoreModules = function() {
     self.on('isModuleDownloaded', self.isModuleDownloaded);
 
     for (var shortName in packageJSON.services) {
-      var fullName = packageJSON.services[shortName];
+      var fullName = '';
+      if(typeof packageJSON.services[shortName] === 'string'){
+        fullName = packageJSON.services[shortName];
+      } else {
+        if(packageJSON.services[shortName].source) {
+          fullName = packageJSON.services[shortName].source;
+        }
+      }
       self.prepareModule(fullName, function(module) {
         self.checkModule(module);
       });
