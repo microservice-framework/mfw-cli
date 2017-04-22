@@ -704,7 +704,7 @@ MFWCliClass.prototype.setModuleDefaults = function(schema, module) {
     }
   }
 
-  // Replace :token: with value
+  // Replace {token} with value
   for (var name in schema.properties) {
     var value = schema.properties[name].default;
     if (typeof value === 'string') {
