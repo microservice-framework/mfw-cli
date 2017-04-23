@@ -192,11 +192,11 @@ MFWCliClass.prototype.start = function(RootDirectory, serviceName, isDevelMode) 
       var stat = fs.statSync(servicesDir + filename);
       if (stat.isDirectory()) {
         var status = statusCheck(RootDirectory, filename);
-        status.on('status', function(service, status){
+        status.on('status', function(service, status) {
           self.message('error', status.name + ' already running.');
         });
-        status.on('error', function(error, service, status){
-          if(status) {
+        status.on('error', function(error, service, status) {
+          if (status) {
             return self.startService(service, status.start);
           }
           self.startService(service);
@@ -205,11 +205,11 @@ MFWCliClass.prototype.start = function(RootDirectory, serviceName, isDevelMode) 
     }
   } else {
     var status = statusCheck(RootDirectory, serviceName);
-    status.on('status', function(service, status){
+    status.on('status', function(service, status) {
       self.message('error', status.name + ' already running.');
     });
-    status.on('error', function(error, service, status){
-      if(status) {
+    status.on('error', function(error, service, status) {
+      if (status) {
         return self.startService(service, status.start);
       }
       self.startService(service);
@@ -262,7 +262,7 @@ MFWCliClass.prototype.startByJSON = function(serviceName) {
 MFWCliClass.prototype.startService = function(serviceName, name) {
   var self = this;
   var serviceDir = self.RootDirectory + '/services/' + serviceName;
-  if(!name) {
+  if (!name) {
     return self.startByJSON(serviceName);
   }
   if (self.devel) {
@@ -317,14 +317,14 @@ MFWCliClass.prototype.stop = function(RootDirectory, serviceName) {
       var stat = fs.statSync(servicesDir + filename);
       if (stat.isDirectory()) {
         var status = statusCheck(RootDirectory, filename);
-        status.on('status', function(service, status){
-          if(status) {
+        status.on('status', function(service, status) {
+          if (status) {
             return self.stopService(service, status.stop);
           }
           self.stopService(service);
         });
-        status.on('error', function(error, service, status){
-          if(status) {
+        status.on('error', function(error, service, status) {
+          if (status) {
             return self.message('error', status.name + ' ' + error);
           }
         });
@@ -332,14 +332,14 @@ MFWCliClass.prototype.stop = function(RootDirectory, serviceName) {
     }
   } else {
     var status = statusCheck(RootDirectory, serviceName);
-    status.on('status', function(service, status){
-      if(status) {
+    status.on('status', function(service, status) {
+      if (status) {
         return self.stopService(service, status.stop);
       }
       self.stopService(service);
     });
-    status.on('error', function(error, service, status){
-      if(status) {
+    status.on('error', function(error, service, status) {
+      if (status) {
         return self.message('error', status.name + ' ' + error);
       }
       self.message('error', service + ' ' + error);
@@ -391,12 +391,12 @@ MFWCliClass.prototype.stopByJSON = function(serviceName) {
  */
 MFWCliClass.prototype.stopService = function(serviceName, name) {
   var self = this;
-  if(!name) {
+  if (!name) {
     return self.stopByJSON(serviceName);
   }
   var serviceDir = self.RootDirectory + '/services/' + serviceName;
   self.progressMessage('stopping ' + serviceName + ':' + name);
-  var child = spawn('npm', ['run', name, "-s" ], {cwd: serviceDir, stdio: 'inherit'});
+  var child = spawn('npm', ['run', name, '-s' ], {cwd: serviceDir, stdio: 'inherit'});
 }
 
 /**

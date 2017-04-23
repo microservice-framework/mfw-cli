@@ -175,26 +175,26 @@ MFWCliStatusClass.prototype.checkStatus = function(module) {
  */
 MFWCliStatusClass.prototype.reportStatus = function(module, name) {
   var self = this;
-    var env = process.env;
-    var child = spawn('npm', ['run', name , '-s'], {
-      cwd: module.installDir,
-      stdio: 'pipe',
-      env: env
-    });
-    child.on('error', (err) => {
-      self.emit('error',  err.message, module.module);
-    });
-    child.stdout.on("data", function(data){
-      try{
-        var result = JSON.parse(data);
-        for (var name in result) {
-          self.processPidUsageCheck(result[name], name, module);
-        }
-      }catch(e){
-        self.emit('error',e.message, module.module);
+  var env = process.env;
+  var child = spawn('npm', ['run', name , '-s'], {
+    cwd: module.installDir,
+    stdio: 'pipe',
+    env: env
+  });
+  child.on('error', (err) => {
+    self.emit('error',  err.message, module.module);
+  });
+  child.stdout.on('data', function(data) {
+    try {
+      var result = JSON.parse(data);
+      for (var name in result) {
+        self.processPidUsageCheck(result[name], name, module);
       }
+    }catch(e) {
+      self.emit('error',e.message, module.module);
+    }
 
-    });
+  });
 }
 
 /**
@@ -204,7 +204,7 @@ MFWCliStatusClass.prototype.reportStatus = function(module, name) {
  */
 MFWCliStatusClass.prototype.processPidUsageCheck = function(data, name, module) {
   var self = this;
-  if(typeof data === 'string') {
+  if (typeof data === 'string') {
     var status = {
       name: name,
       pid: data,
@@ -220,7 +220,7 @@ MFWCliStatusClass.prototype.processPidUsageCheck = function(data, name, module) 
     }
   }
   pusage.stat(status.pid, function(err, stat) {
-    if(err) {
+    if (err) {
       self.emit('error', 'Failed to get status', module.module, status);
       return;
     }
@@ -237,26 +237,26 @@ MFWCliStatusClass.prototype.processPidUsageCheck = function(data, name, module) 
 MFWCliStatusClass.prototype.processCommand = function(module, name) {
   var self = this;
   self.progressMessage('checking ' + module.module + ':' + name);
-    var env = process.env;
-    var child = spawn('npm', ['run', name , '-s'], {
-      cwd: module.installDir,
-      stdio: 'pipe',
-      env: env
-    });
-    child.on('error', (err) => {
-      console.log(err);
-    });
-    child.stdout.on("data", function(data){
-      try{
-        var result = JSON.parse(data);
-        for (var name in result) {
-          self.processPidUsage(result[name], name);
-        }
-      }catch(e){
-        self.message('error', e);
+  var env = process.env;
+  var child = spawn('npm', ['run', name , '-s'], {
+    cwd: module.installDir,
+    stdio: 'pipe',
+    env: env
+  });
+  child.on('error', (err) => {
+    console.log(err);
+  });
+  child.stdout.on('data', function(data) {
+    try {
+      var result = JSON.parse(data);
+      for (var name in result) {
+        self.processPidUsage(result[name], name);
       }
+    }catch(e) {
+      self.message('error', e);
+    }
 
-    });
+  });
 }
 
 /**
@@ -266,7 +266,7 @@ MFWCliStatusClass.prototype.processCommand = function(module, name) {
  */
 MFWCliStatusClass.prototype.processPidUsage = function(data, name) {
   var self = this;
-  if(typeof data === 'string') {
+  if (typeof data === 'string') {
     var status = {
       name: name,
       pid: data,
@@ -282,13 +282,13 @@ MFWCliStatusClass.prototype.processPidUsage = function(data, name) {
     }
   }
   pusage.stat(status.pid, function(err, stat) {
-    if(err) {
+    if (err) {
       status.error = 'Failed to get status' ;
       self.message('status', status);
       return;
     }
     status.cpu = stat.cpu;
-    status.mem = Math.round(stat.memory /1024/1024);
+    status.mem = Math.round(stat.memory / 1024 / 1024);
     self.message('status', status);
     return;
   });
@@ -326,7 +326,7 @@ MFWCliStatusClass.prototype.isRootExists = function(err, type) {
     return self.message('error', 'There is no root directory.');
   }
 
-  if(!self.module || self.module == 'all') {
+  if (!self.module || self.module == 'all') {
     var packageJSON = self.getPackageJSON();
     if (packageJSON.services) {
 
@@ -403,11 +403,11 @@ MFWCliStatusClass.prototype.progressMessage = function(message) {
  */
 MFWCliStatusClass.prototype.printMessages = function() {
   var self = this;
-  var table = new Table({ head: ["Service", "pid", "CPU", "MEM (mb)", ""] ,
-    chars: { 'top': ' ' , 'top-mid': ' ' , 'top-left': ' ' , 'top-right': ' '
-         , 'bottom': ' ' , 'bottom-mid': ' ' , 'bottom-left': ' ' , 'bottom-right': ' '
-         , 'left': ' ' , 'left-mid': '-' , 'mid': '-' , 'mid-mid': '-'
-         , 'right': ' ' , 'right-mid': ' ' , 'middle': '  ' }
+  var table = new Table({ head: ['Service', 'pid', 'CPU', 'MEM (mb)', ''] ,
+    chars: { top: ' ' , 'top-mid': ' ' , 'top-left': ' ' , 'top-right': ' '
+      , bottom: ' ' , 'bottom-mid': ' ' , 'bottom-left': ' ' , 'bottom-right': ' '
+      , left: ' ' , 'left-mid': '-' , mid: '-' , 'mid-mid': '-'
+      , right: ' ' , 'right-mid': ' ' , middle: '  ' }
   });
   for (var type in self.messages) {
     if (self.messages[type].length > 0) {
@@ -427,12 +427,12 @@ MFWCliStatusClass.prototype.printMessages = function() {
             break;
           }
           case 'status': {
-            if(message.error) {
+            if (message.error) {
               table.push([
               colors.red(message.name),
               colors.gray(message.pid),
-              "",
-              "",
+              '',
+              '',
               message.error
               ]);
               break;
@@ -442,7 +442,7 @@ MFWCliStatusClass.prototype.printMessages = function() {
               colors.gray(message.pid),
               message.cpu,
               message.mem,
-              ""
+              ''
             ]);
             break;
           }
