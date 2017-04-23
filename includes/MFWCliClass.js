@@ -12,6 +12,7 @@ const colors    = require('colors/safe');
 
 const Message = require('../includes/message.js');
 const tokenGenerate = require('./token-generate.js');
+const statusCheck = require('./MFWCliStatus.js').StatusCheck;
 
 prompt.message = '';
 /**
@@ -190,11 +191,29 @@ MFWCliClass.prototype.start = function(RootDirectory, serviceName, isDevelMode) 
       var filename = files[i];
       var stat = fs.statSync(servicesDir + filename);
       if (stat.isDirectory()) {
-        self.startService(filename);
+        var status = statusCheck(RootDirectory, filename);
+        status.on('status', function(service, status){
+          self.message('error', status.name + ' already running.');
+        });
+        status.on('error', function(error, service, status){
+          if(status) {
+            return self.startService(service, status.start);
+          }
+          self.startService(service);
+        });
       }
     }
   } else {
-    self.startService(serviceName);
+    var status = statusCheck(RootDirectory, serviceName);
+    status.on('status', function(service, status){
+      self.message('error', status.name + ' already running.');
+    });
+    status.on('error', function(error, service, status){
+      if(status) {
+        return self.startService(service, status.start);
+      }
+      self.startService(service);
+    });
   }
 }
 
@@ -203,7 +222,7 @@ MFWCliClass.prototype.start = function(RootDirectory, serviceName, isDevelMode) 
  *
  * @param {string} serviceName - service name.
  */
-MFWCliClass.prototype.startService = function(serviceName) {
+MFWCliClass.prototype.startByJSON = function(serviceName) {
   var self = this;
   var serviceDir = self.RootDirectory + '/services/' + serviceName;
 
@@ -232,32 +251,45 @@ MFWCliClass.prototype.startService = function(serviceName) {
   }
   for (var i in listToStart) {
     var name = listToStart[i];
-    if (self.devel) {
-      self.progressMessage('starting ' + serviceName + ':' + name + ' in devel mode');
-      var env = process.env;
-      env.DEBUG = '*';
-      env.DEVEL = true;
-      var child = spawn('npm', ['run', name ], {
-        cwd: serviceDir,
-        stdio: 'inherit',
-        env: env
-      });
-      child.on('error', (err) => {
-        console.log(err);
-      });
-      child.on('exit', (code) => {
-        console.log('Child exited with code ' + code);
-      });
-    } else {
-      self.progressMessage('starting '  + serviceName + ':' + name);
-      var child = spawn('npm', ['run', name ], {cwd: serviceDir, detached: true, stdio: 'ignore'});
-      if (child.exitCode) {
-        self.message('error', 'Died with code' + child.exitCode);
-      }else {
-        self.message('ok', name + ' started');
-      }
-      child.unref();
+    self.startService(serviceName, name);
+  }
+}
+/**
+ * Start service by name.
+ *
+ * @param {string} serviceName - service name.
+ */
+MFWCliClass.prototype.startService = function(serviceName, name) {
+  var self = this;
+  var serviceDir = self.RootDirectory + '/services/' + serviceName;
+  if(!name) {
+    return self.startByJSON(serviceName);
+  }
+  if (self.devel) {
+    self.progressMessage('starting ' + serviceName + ':' + name + ' in devel mode');
+    var env = process.env;
+    env.DEBUG = '*';
+    env.DEVEL = true;
+    var child = spawn('npm', ['run', name, '-s' ], {
+      cwd: serviceDir,
+      stdio: 'inherit',
+      env: env
+    });
+    child.on('error', (err) => {
+      console.log(err);
+    });
+    child.on('exit', (code) => {
+      console.log('Child exited with code ' + code);
+    });
+  } else {
+    self.progressMessage('starting '  + serviceName + ':' + name);
+    var child = spawn('npm', ['run', name ], {cwd: serviceDir, detached: true, stdio: 'ignore'});
+    if (child.exitCode) {
+      self.message('error', 'Died with code' + child.exitCode);
+    }else {
+      self.message('ok', serviceName + ':' + name + ' started');
     }
+    child.unref();
   }
 }
 
@@ -284,20 +316,43 @@ MFWCliClass.prototype.stop = function(RootDirectory, serviceName) {
       var filename = files[i];
       var stat = fs.statSync(servicesDir + filename);
       if (stat.isDirectory()) {
-        self.stopService(filename);
+        var status = statusCheck(RootDirectory, filename);
+        status.on('status', function(service, status){
+          if(status) {
+            return self.stopService(service, status.stop);
+          }
+          self.stopService(service);
+        });
+        status.on('error', function(error, service, status){
+          if(status) {
+            return self.message('error', status.name + ' ' + error);
+          }
+        });
       }
     }
   } else {
-    self.stopService(serviceName);
+    var status = statusCheck(RootDirectory, serviceName);
+    status.on('status', function(service, status){
+      if(status) {
+        return self.stopService(service, status.stop);
+      }
+      self.stopService(service);
+    });
+    status.on('error', function(error, service, status){
+      if(status) {
+        return self.message('error', status.name + ' ' + error);
+      }
+      self.message('error', service + ' ' + error);
+    });
   }
 }
 
 /**
- * Stop service by name.
+ * Start service by name.
  *
  * @param {string} serviceName - service name.
  */
-MFWCliClass.prototype.stopService = function(serviceName) {
+MFWCliClass.prototype.stopByJSON = function(serviceName) {
   var self = this;
   var serviceDir = self.RootDirectory + '/services/' + serviceName;
 
@@ -326,9 +381,22 @@ MFWCliClass.prototype.stopService = function(serviceName) {
   }
   for (var i in listToStop) {
     var name = listToStop[i];
-    self.progressMessage('stopping ' + serviceName + ':' + name);
-    var child = spawn('npm', ['run', name ], {cwd: serviceDir, stdio: 'inherit'});
+    self.stopService(serviceName, name)
   }
+}
+/**
+ * Stop service by name.
+ *
+ * @param {string} serviceName - service name.
+ */
+MFWCliClass.prototype.stopService = function(serviceName, name) {
+  var self = this;
+  if(!name) {
+    return self.stopByJSON(serviceName);
+  }
+  var serviceDir = self.RootDirectory + '/services/' + serviceName;
+  self.progressMessage('stopping ' + serviceName + ':' + name);
+  var child = spawn('npm', ['run', name, "-s" ], {cwd: serviceDir, stdio: 'inherit'});
 }
 
 /**

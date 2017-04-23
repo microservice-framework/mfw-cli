@@ -8,6 +8,7 @@ const fs = require('fs');
 const pkg = require('../package.json');
 const Message = require('../includes/message.js');
 const MFWCli = require('../includes/MFWCliClass.js');
+const status = require('../includes/MFWCliStatus.js');
 const client = require('../includes/MFWClient.js');
 const exec = require('child_process').exec;
 
@@ -53,6 +54,11 @@ commander.command('stop <module>')
   .description('Stop microservice(s)')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .action(stopService);
+
+commander.command('status [module]')
+  .description('Microservice(s) status')
+  .option('-r, --root <dir>', 'Optionaly root directory')
+  .action(status.Status);
 
 commander.command('client-create <module> <JSONDATA>')
   .description('Create resource in service.')
