@@ -288,7 +288,7 @@ MFWCliStatusClass.prototype.processPidUsage = function(data, name) {
       self.message('status', status);
       return;
     }
-    status.cpu = stat.cpu;
+    status.cpu = stat.cpu.toFixed(2);
     status.mem = Math.round(stat.memory / 1024 / 1024);
     self.message('status', status);
     return;
