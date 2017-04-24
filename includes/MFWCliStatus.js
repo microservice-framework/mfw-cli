@@ -46,10 +46,10 @@ MFWCliStatusClass.prototype.check = function(RootDirectory, module) {
   self.on('isRootExists', self.isRootExists);
   self.on('isModuleExists', function(err, type, module) {
     if (err) {
-      return self.message('error', err.message);
+      return self.emit('error', err.message, module.module);
     }
     if (!type) {
-      return self.message('error', 'Module does not exists.');
+      return self.emit('error', 'Module does not exists.', module.module);
     }
     self.checkStatus(module);
   });
@@ -117,18 +117,18 @@ MFWCliStatusClass.prototype.checkProcessStatus = function(module) {
     return self.message('error', 'Failed to get status ' + module.module + ' - no scripts defined');
   }
 
-  var listToStart = [];
+  var listToCheck = [];
   for (var name in modulePackageJSON.scripts) {
     if (name.indexOf('status') != -1) {
-      listToStart.push(name);
+      listToCheck.push(name);
     }
   }
-  if (listToStart.length == 0) {
+  if (listToCheck.length == 0) {
     self.progressMessage(module.module + ' don\'t have status');
     return;
   }
-  for (var i in listToStart) {
-    var name = listToStart[i];
+  for (var i in listToCheck) {
+    var name = listToCheck[i];
     self.processCommand(module, name);
   }
 }
@@ -152,18 +152,19 @@ MFWCliStatusClass.prototype.checkStatus = function(module) {
     return self.emit('error', 'Failed to get status: no scripts defined', module.module);
   }
 
-  var listToStart = [];
+  var listToCheck = [];
   for (var name in modulePackageJSON.scripts) {
     if (name.indexOf('status') != -1) {
-      listToStart.push(name);
+      listToCheck.push(name);
     }
   }
-  if (listToStart.length == 0) {
+  if (listToCheck.length == 0) {
     self.emit('error', 'No status support', module.module);
     return;
   }
-  for (var i in listToStart) {
-    var name = listToStart[i];
+
+  for (var i in listToCheck) {
+    var name = listToCheck[i];
     self.reportStatus(module, name);
   }
 }

@@ -1,6 +1,5 @@
 /**
- * Process JSON validation and execute tasks.
- * Parse request and s
+ * Integration with microservice-client.
  */
 'use strict';
 
