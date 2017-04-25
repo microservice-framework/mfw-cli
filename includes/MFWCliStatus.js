@@ -428,7 +428,7 @@ MFWCliStatusClass.prototype.printMessages = function() {
           }
           case 'status': {
             var version = 'und';
-            if(message.package && message.package.version) {
+            if (message.package && message.package.version) {
               version =  message.package.version;
             }
             if (message.error) {
@@ -465,19 +465,23 @@ MFWCliStatusClass.prototype.printMessages = function() {
     style: { head: ['black', 'inverse']}
   });
   rows = rows.sort(function Comparator(a, b) {
-     if (a[0] < b[0]) return -1;
-     if (a[0] > b[0]) return 1;
-     return 0;
-   });
+    if (a[0] < b[0]) {
+      return -1;
+    }
+    if (a[0] > b[0]) {
+      return 1;
+    }
+    return 0;
+  });
   var count = {};
   count.services = rows.length;
   count.up = 0;
   count.down = 0;
   count.cpu = 0;
   count.mem = 0;
-  for( var i in rows) {
+  for (var i in rows) {
     table.push(rows[i]);
-    if(rows[i][5]  == '') {
+    if (rows[i][5]  == '') {
       count.up = count.up + 1;
       count.cpu = count.cpu + parseFloat(rows[i][3]);
       count.mem = count.mem + parseFloat(rows[i][4]);
@@ -487,8 +491,8 @@ MFWCliStatusClass.prototype.printMessages = function() {
   }
   table.push([
     colors.green(count.up) + ' / ' + colors.red(count.down),
-    "",
-    "",
+    '',
+    '',
     colors.blue(count.cpu) + colors.gray(' %'),
     colors.blue(count.mem) + colors.gray(' Mb'),
   ])
