@@ -12,26 +12,26 @@ const status = require('../includes/MFWCliStatus.js');
 const client = require('../includes/MFWClient.js');
 const exec = require('child_process').exec;
 
-commander.version(pkg.version).usage('[cmd] [module]');
+commander.version(pkg.version).usage('[cmd] [options] [mode]');
 
 commander.command('setup [dir]')
   .description('setup directory')
   .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
   .action(setupDir);
 
-commander.command('install <module>')
-  .description('Install microservice')
+commander.command('install <service>')
+  .description('Install microservice. Use "all" to install all services saved in package.json.')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .option('-s, --save', 'Save microservice information')
   .option('-d, --default', 'Set default values')
   .action(installService);
 
-commander.command('update <module>')
-  .description('Update microservice')
+commander.command('update <service>')
+  .description('Update microservice. Use "all" to install all services saved in package.json.')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .action(updateService);
 
-commander.command('uninstall <module>')
+commander.command('uninstall <service>')
   .description('Uninstall microservice')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .option('-s, --save', 'Save microservice information')
@@ -44,23 +44,23 @@ commander.command('env [env]')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .action(envList);
 
-commander.command('start <module>')
-  .description('Start microservice(s)')
+commander.command('start <service>')
+  .description('Start microservice(s). Use "all" to install all services saved in package.json.')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .option('-d, --devel', 'Optionaly devel mode')
   .action(startService);
 
-commander.command('stop <module>')
-  .description('Stop microservice(s)')
+commander.command('stop <service>')
+  .description('Stop microservice(s). Use "all" to install all services saved in package.json.')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .action(stopService);
 
-commander.command('status [module]')
+commander.command('status [service]')
   .description('Microservice(s) status')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .action(status.Status);
 
-commander.command('client-create <module> <JSONDATA>')
+commander.command('client-create <service> <JSONDATA>')
   .description('Create resource in service.')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .option('-t, --token <token>', 'Optionaly token. If no token provided, SECURE_KEY used.')
@@ -68,14 +68,14 @@ commander.command('client-create <module> <JSONDATA>')
     'Optionaly access token. If no token provided, SECURE_KEY used instead.')
   .action(client.clientPOST);
 
-commander.command('client-read <module> <id>')
+commander.command('client-read <service> <id>')
   .description('Read resource by ID from service.')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .option('-t, --token <token>', 'Optionaly token.')
   .option('-a, --accesstoken <accesstoken>', 'Optionaly access token.')
   .action(client.clientGet);
 
-commander.command('client-update <module> <id> <JSONDATA>')
+commander.command('client-update <service> <id> <JSONDATA>')
   .description('Update resource by ID for service.')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .option('-t, --token <token>', 'Optionaly token. If no token provided, SECURE_KEY used.')
@@ -83,14 +83,14 @@ commander.command('client-update <module> <id> <JSONDATA>')
     'Optionaly access token. If no token provided, SECURE_KEY used instead.')
   .action(client.clientPUT);
 
-commander.command('client-delete <module> <id>')
+commander.command('client-delete <service> <id>')
   .description('Delete resource by ID from service.')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .option('-t, --token <token>', 'Optionaly token.')
   .option('-a, --accesstoken <accesstoken>', 'Optionaly access token.')
   .action(client.clientDEL);
 
-commander.command('client-search <module> <JSONDATA>')
+commander.command('client-search <service> <JSONDATA>')
   .description('Search resource in service.')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .option('-t, --token <token>', 'Optionaly token. If no token provided, SECURE_KEY used.')
@@ -134,7 +134,7 @@ function installService(service, options) {
  */
 function updateService(service, options) {
   var rootDIR = getRoot(options);
-  if (service) {
+  if (service != 'all') {
     return MFWCli.update(rootDIR, service);
   }
   MFWCli.updateAll(rootDIR);
