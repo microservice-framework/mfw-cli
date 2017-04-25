@@ -117,6 +117,9 @@ MFWCliStatusClass.prototype.checkProcessStatus = function(module) {
     return self.message('error', 'Failed to get status ' + module.module + ' - no scripts defined');
   }
 
+
+  module.package = modulePackageJSON;
+
   var listToCheck = [];
   for (var name in modulePackageJSON.scripts) {
     if (name.indexOf('status') != -1) {
@@ -251,7 +254,7 @@ MFWCliStatusClass.prototype.processCommand = function(module, name) {
     try {
       var result = JSON.parse(data);
       for (var name in result) {
-        self.processPidUsage(result[name], name);
+        self.processPidUsage(result[name], name, module);
       }
     }catch(e) {
       self.message('error', e);
@@ -265,7 +268,7 @@ MFWCliStatusClass.prototype.processCommand = function(module, name) {
  *
  * @param {object} module - module data.
  */
-MFWCliStatusClass.prototype.processPidUsage = function(data, name) {
+MFWCliStatusClass.prototype.processPidUsage = function(data, name, module) {
   var self = this;
   if (typeof data === 'string') {
     var status = {
@@ -282,6 +285,7 @@ MFWCliStatusClass.prototype.processPidUsage = function(data, name) {
       stop: data.stop,
     }
   }
+  status.package = module.package;
   pusage.stat(status.pid, function(err, stat) {
     if (err) {
       status.error = 'Failed to get status' ;
@@ -404,12 +408,7 @@ MFWCliStatusClass.prototype.progressMessage = function(message) {
  */
 MFWCliStatusClass.prototype.printMessages = function() {
   var self = this;
-  var table = new Table({ head: ['Service', 'pid', 'CPU', 'MEM (mb)', ''] ,
-    chars: { top: ' ' , 'top-mid': ' ' , 'top-left': ' ' , 'top-right': ' '
-      , bottom: ' ' , 'bottom-mid': ' ' , 'bottom-left': ' ' , 'bottom-right': ' '
-      , left: ' ' , 'left-mid': '-' , mid: '-' , 'mid-mid': '-'
-      , right: ' ' , 'right-mid': ' ' , middle: '  ' }
-  });
+  var rows = [];
   for (var type in self.messages) {
     if (self.messages[type].length > 0) {
       for (var i in self.messages[type]) {
@@ -428,18 +427,24 @@ MFWCliStatusClass.prototype.printMessages = function() {
             break;
           }
           case 'status': {
+            var version = 'und';
+            if(message.package && message.package.version) {
+              version =  message.package.version;
+            }
             if (message.error) {
-              table.push([
-              colors.red(message.name),
-              colors.gray(message.pid),
-              '',
-              '',
-              message.error
+              rows.push([
+                colors.red(message.name),
+                colors.gray(version),
+                colors.gray(message.pid),
+                '',
+                '',
+                message.error
               ]);
               break;
             }
-            table.push([
+            rows.push([
               colors.green(message.name),
+              colors.gray(version),
               colors.gray(message.pid),
               message.cpu,
               message.mem,
@@ -451,6 +456,42 @@ MFWCliStatusClass.prototype.printMessages = function() {
       }
     }
   }
+
+  var table = new Table({ head: ['SERVICE ', 'VERSION ', 'PID ', 'CPU  ', 'MEM  ', 'Comment'] ,
+    chars: { top: '' , 'top-mid': '' , 'top-left': ' ' , 'top-right': ''
+      , bottom: ' ' , 'bottom-mid': '' , 'bottom-left': ' ' , 'bottom-right': ''
+      , left: ' ' , 'left-mid': ' ' , mid: '-' , 'mid-mid': '-'
+      , right: ' ' , 'right-mid': '' , middle: '' },
+    style: { head: ['black', 'inverse']}
+  });
+  rows = rows.sort(function Comparator(a, b) {
+     if (a[0] < b[0]) return -1;
+     if (a[0] > b[0]) return 1;
+     return 0;
+   });
+  var count = {};
+  count.services = rows.length;
+  count.up = 0;
+  count.down = 0;
+  count.cpu = 0;
+  count.mem = 0;
+  for( var i in rows) {
+    table.push(rows[i]);
+    if(rows[i][5]  == '') {
+      count.up = count.up + 1;
+      count.cpu = count.cpu + parseFloat(rows[i][3]);
+      count.mem = count.mem + parseFloat(rows[i][4]);
+    } else {
+      count.down = count.down + 1;
+    }
+  }
+  table.push([
+    colors.green(count.up) + ' / ' + colors.red(count.down),
+    "",
+    "",
+    colors.blue(count.cpu) + colors.gray(' %'),
+    colors.blue(count.mem) + colors.gray(' Mb'),
+  ])
   console.log(table.toString());
 }
 
