@@ -123,7 +123,10 @@ MFWCliStatusClass.prototype.checkProcessStatus = function(module) {
   var listToCheck = [];
   for (var name in modulePackageJSON.scripts) {
     if (name.indexOf('status') != -1) {
-      listToCheck.push(name);
+      listToCheck.push({
+        name: name,
+        script: modulePackageJSON.scripts[name]
+      });
     }
   }
   if (listToCheck.length == 0) {
@@ -131,8 +134,8 @@ MFWCliStatusClass.prototype.checkProcessStatus = function(module) {
     return;
   }
   for (var i in listToCheck) {
-    var name = listToCheck[i];
-    self.processCommand(module, name);
+    var item = listToCheck[i];
+    self.processCommand(module, item);
   }
 }
 
@@ -158,7 +161,10 @@ MFWCliStatusClass.prototype.checkStatus = function(module) {
   var listToCheck = [];
   for (var name in modulePackageJSON.scripts) {
     if (name.indexOf('status') != -1) {
-      listToCheck.push(name);
+      listToCheck.push({
+        name: name,
+        script: modulePackageJSON.scripts[name]
+      });
     }
   }
   if (listToCheck.length == 0) {
@@ -167,8 +173,8 @@ MFWCliStatusClass.prototype.checkStatus = function(module) {
   }
 
   for (var i in listToCheck) {
-    var name = listToCheck[i];
-    self.reportStatus(module, name);
+    var script = listToCheck[i];
+    self.reportStatus(module, script);
   }
 }
 
@@ -177,27 +183,22 @@ MFWCliStatusClass.prototype.checkStatus = function(module) {
  *
  * @param {object} module - module data.
  */
-MFWCliStatusClass.prototype.reportStatus = function(module, name) {
+MFWCliStatusClass.prototype.reportStatus = function(module, script) {
   var self = this;
   var env = process.env;
-  var child = spawn('npm', ['run', name , '-s'], {
-    cwd: module.installDir,
-    stdio: 'pipe',
-    env: env
-  });
-  child.on('error', (err) => {
-    self.emit('error',  err.message, module.module);
-  });
-  child.stdout.on('data', function(data) {
+  env.npm_package_name = module.module;
+  exec(script.script, {cwd: module.installDir, env: env}, function(err, stdout, stderr) {
+    if (err) {
+      return self.emit('error',  err.message, module.module);
+    }
     try {
-      var result = JSON.parse(data);
+      var result = JSON.parse(stdout);
       for (var name in result) {
         self.processPidUsageCheck(result[name], name, module);
       }
     }catch(e) {
       self.emit('error',e.message, module.module);
     }
-
   });
 }
 
@@ -208,7 +209,7 @@ MFWCliStatusClass.prototype.reportStatus = function(module, name) {
  */
 MFWCliStatusClass.prototype.processPidUsageCheck = function(data, name, module) {
   var self = this;
-  if (typeof data === 'string') {
+  if (typeof data === 'boolean' || typeof data === 'string') {
     var status = {
       name: name,
       pid: data,
@@ -222,6 +223,10 @@ MFWCliStatusClass.prototype.processPidUsageCheck = function(data, name, module) 
       start: data.start,
       stop: data.stop,
     }
+  }
+  if(status.pid === false) {
+    self.emit('error', 'No pid file available.', module.module, status);
+    return;
   }
   pusage.stat(status.pid, function(err, stat) {
     if (err) {
@@ -238,28 +243,23 @@ MFWCliStatusClass.prototype.processPidUsageCheck = function(data, name, module) 
  *
  * @param {object} module - module data.
  */
-MFWCliStatusClass.prototype.processCommand = function(module, name) {
+MFWCliStatusClass.prototype.processCommand = function(module, script) {
   var self = this;
-  self.progressMessage('checking ' + module.module + ':' + name);
+  self.progressMessage('checking ' + module.module + ':' + script.name);
   var env = process.env;
-  var child = spawn('npm', ['run', name , '-s'], {
-    cwd: module.installDir,
-    stdio: 'pipe',
-    env: env
-  });
-  child.on('error', (err) => {
-    console.log(err);
-  });
-  child.stdout.on('data', function(data) {
+  env.npm_package_name = module.module;
+  exec(script.script, {cwd: module.installDir, env: env}, function(err, stdout, stderr) {
+    if (err) {
+      return self.message('error',  err.message);
+    }
     try {
-      var result = JSON.parse(data);
+      var result = JSON.parse(stdout);
       for (var name in result) {
         self.processPidUsage(result[name], name, module);
       }
     }catch(e) {
-      self.message('error', e);
+      return self.message('error',  e.message);
     }
-
   });
 }
 
@@ -270,7 +270,7 @@ MFWCliStatusClass.prototype.processCommand = function(module, name) {
  */
 MFWCliStatusClass.prototype.processPidUsage = function(data, name, module) {
   var self = this;
-  if (typeof data === 'string') {
+  if (typeof data === 'string' || typeof data === 'string') {
     var status = {
       name: name,
       pid: data,
@@ -284,6 +284,11 @@ MFWCliStatusClass.prototype.processPidUsage = function(data, name, module) {
       start: data.start,
       stop: data.stop,
     }
+  }
+  if(status.pid === false) {
+    status.error = 'No pid file available.';
+    self.message('status', 'Failed to get status', status);
+    return;
   }
   status.package = module.package;
   pusage.stat(status.pid, function(err, stat) {
