@@ -224,7 +224,7 @@ MFWCliStatusClass.prototype.processPidUsageCheck = function(data, name, module) 
       stop: data.stop,
     }
   }
-  if(status.pid === false) {
+  if (status.pid === false) {
     self.emit('error', 'No pid file available.', module.module, status);
     return;
   }
@@ -285,7 +285,7 @@ MFWCliStatusClass.prototype.processPidUsage = function(data, name, module) {
       stop: data.stop,
     }
   }
-  if(status.pid === false) {
+  if (status.pid === false) {
     status.error = 'No pid file available.';
     self.message('status', 'Failed to get status', status);
     return;

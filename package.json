@@ -1,6 +1,6 @@
 {
   "name": "@microservice-framework/mfw-cli",
-  "version": "1.0.1",
+  "version": "1.2.0",
   "description": "Console utility for @microservice-framework",
   "main": "index.js",
   "directories": {

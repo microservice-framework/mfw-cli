@@ -21,7 +21,7 @@ In this case it will download and configure silently all services based on defau
 ## Install service 
 
 ```
-# mfw install [module]
+# mfw install [service]
 ```
 
 Example:
@@ -33,7 +33,7 @@ Example:
 Will install and ask for configurations of microservice-router.
 With `--save` option all settings and service will be added to package.json file of the project.
 
-`[module]` - could be:
+`[service]` - could be:
   - npm package name. Will be downloaded from npm registry
   - local path to directory with package (will be copied)
   - github:owner/repo - will be downloaded from github.
@@ -43,7 +43,7 @@ Basically support all formats as `npm pack` supports.
 ## Uninstall service 
 
 ```
-# mfw uninstall [module]
+# mfw uninstall [service]
 ```
 
 Example:
@@ -59,7 +59,7 @@ With `--save` option all settings and service will be removed from package.json 
 ## Update service 
 
 ```
-# mfw update [module]
+# mfw update [service]
 ```
 
 Example:
@@ -92,7 +92,7 @@ Will switch to exists one or generate new one.
 ## Start service 
 
 ```
-# mfw start [module]
+# mfw start [service]
 ```
 
 Will start service. IF `all` provided - all services will be started.
@@ -101,8 +101,26 @@ Will start service. IF `all` provided - all services will be started.
 ## Stop service 
 
 ```
-# mfw stop [module]
+# mfw stop [service]
 ```
 
 Will stop service. IF `all` provided - all services will be stopped.
 
+
+
+## Status service 
+
+```
+# mfw status <service>
+```
+
+Display status for specified service or for all services without option.
+Status include CPU, MEMORY usage and up/down + version and pid information
+
+## Microservice client integration
+
+ - `C`reate (POST): `mfw client-create [options] <service> <JSONDATA>` - send create request to microservice.
+ - `R`ead (GET): `mfw client-read [options] <service> <id>` - read record by ID.
+ - `U`pdate (PUT): `mfw client-update [options] <service> <id> <JSONDATA>` - update record by ID.
+ - `D`elete (DELETE): `mfw client-delete [options] <service> <id>` - delete record from microservice by ID.
+ - `S`earch (SEARCH): `mfw client-search [options] <service> <JSONDATA>` - search records by query.
