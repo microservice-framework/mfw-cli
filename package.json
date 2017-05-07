@@ -1,6 +1,6 @@
 {
   "name": "@microservice-framework/mfw-cli",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "description": "Console utility for @microservice-framework",
   "main": "index.js",
   "directories": {
@@ -21,7 +21,7 @@
   },
   "homepage": "https://github.com/microservice-framework/mfw-cli#readme",
   "dependencies": {
-    "@microservice-framework/microservice-client": "^1.1.0",
+    "@microservice-framework/microservice-client": "^1.2.1",
     "cli-table": "^0.3.1",
     "colors": "^1.1.2",
     "commander": "^2.9.0",
