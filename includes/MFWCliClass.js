@@ -265,11 +265,17 @@ MFWCliClass.prototype.startService = function(serviceName, name) {
   if (!name) {
     return self.startByJSON(serviceName);
   }
+  var packageJSON = self.getPackageJSON();
+  var env = process.env;
+  env.mfw_package_name = packageJSON.name;
+  env.mfw_package_version = packageJSON.version;
+  env.mfw_package_description = packageJSON.description;
+
   if (self.devel) {
     self.progressMessage('starting ' + serviceName + ':' + name + ' in devel mode');
-    var env = process.env;
     env.DEBUG = '*';
     env.DEVEL = true;
+
     var child = spawn('npm', ['run', name, '-s' ], {
       cwd: serviceDir,
       stdio: 'inherit',
@@ -283,7 +289,12 @@ MFWCliClass.prototype.startService = function(serviceName, name) {
     });
   } else {
     self.progressMessage('starting '  + serviceName + ':' + name);
-    var child = spawn('npm', ['run', name ], {cwd: serviceDir, detached: true, stdio: 'ignore'});
+    var child = spawn('npm', ['run', name ], {
+      cwd: serviceDir,
+      env: env,
+      detached: true,
+      stdio: 'ignore'
+    });
     if (child.exitCode) {
       self.message('error', 'Died with code' + child.exitCode);
     }else {
