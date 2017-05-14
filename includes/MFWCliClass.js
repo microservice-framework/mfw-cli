@@ -1231,10 +1231,11 @@ MFWCliClass.prototype.printMessages = function() {
  * Process setup command.
  */
 module.exports.setupDir = function(rootDIR, options) {
+  let MFWCli = new MFWCliClass();
   if (!rootDIR) {
     rootDIR = process.cwd();
   }
-  var rootDIR = path.resolve(rootDIR);
+  let rootDIR = path.resolve(rootDIR);
   var envName = options.env;
   if (!envName) {
     envName = '';
@@ -1247,7 +1248,8 @@ module.exports.setupDir = function(rootDIR, options) {
  * Process install command.
  */
 module.exports.installService = function(service, options) {
-  var rootDIR = CommonFunc.getRoot(options);
+  let MFWCli = new MFWCliClass();
+  let rootDIR = CommonFunc.getRoot(options);
   MFWCli.install(rootDIR, service, options.save, options.default);
 }
 
@@ -1255,7 +1257,8 @@ module.exports.installService = function(service, options) {
  * Process update command.
  */
 module.exports.updateService = function(service, options) {
-  var rootDIR = CommonFunc.getRoot(options);
+  let MFWCli = new MFWCliClass();
+  let rootDIR = CommonFunc.getRoot(options);
   if (service != 'all') {
     return MFWCli.update(rootDIR, service);
   }
@@ -1266,7 +1269,8 @@ module.exports.updateService = function(service, options) {
  * Process uninstall command.
  */
 module.exports.uninstallService = function(service, options) {
-  var rootDIR = CommonFunc.getRoot(options);
+  let MFWCli = new MFWCliClass();
+  let rootDIR = CommonFunc.getRoot(options);
   MFWCli.uninstall(rootDIR, service, options.save);
 }
 
@@ -1274,7 +1278,8 @@ module.exports.uninstallService = function(service, options) {
  * Process start command.
  */
 module.exports.startService = function(service, options) {
-  var rootDIR = CommonFunc.getRoot(options);
+  let MFWCli = new MFWCliClass();
+  let rootDIR = CommonFunc.getRoot(options);
   if (!service) {
     service = 'all';
   }
@@ -1285,7 +1290,8 @@ module.exports.startService = function(service, options) {
  * Process stop command.
  */
 module.exports.stopService = function(service, options) {
-  var rootDIR = CommonFunc.getRoot(options);
+  let MFWCli = new MFWCliClass();
+  let rootDIR = CommonFunc.getRoot(options);
   if (!service) {
     service = 'all';
   }
@@ -1296,7 +1302,8 @@ module.exports.stopService = function(service, options) {
  * Process env command.
  */
 module.exports.envList = function(envName, options) {
-  var rootDIR = CommonFunc.getRoot(options);
+  let MFWCli = new MFWCliClass();
+  let rootDIR = CommonFunc.getRoot(options);
   if (envName) {
     if (envName == 'default') {
       envName = '';
