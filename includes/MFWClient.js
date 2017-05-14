@@ -25,7 +25,7 @@ function MFWClientClass() {
     warning: []
   };
   process.on('beforeExit', function() {
-    if(!self.exitPrinted) {
+    if (!self.exitPrinted) {
       self.printMessages();
     }
   });
