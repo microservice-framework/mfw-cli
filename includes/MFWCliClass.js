@@ -1235,7 +1235,7 @@ module.exports.setupDir = function(rootDIR, options) {
   if (!rootDIR) {
     rootDIR = process.cwd();
   }
-  let rootDIR = path.resolve(rootDIR);
+  rootDIR = path.resolve(rootDIR);
   var envName = options.env;
   if (!envName) {
     envName = '';
