@@ -9,6 +9,7 @@ const spawn = require('child_process').spawn;
 const path = require('path');
 const prompt = require('prompt');
 const colors    = require('colors/safe');
+const CommonFunc = require('./common.js');
 
 const Message = require('../includes/message.js');
 const tokenGenerate = require('./token-generate.js');
@@ -1226,4 +1227,84 @@ MFWCliClass.prototype.printMessages = function() {
   }
 }
 
-exports = module.exports = new MFWCliClass();
+/**
+ * Process setup command.
+ */
+module.exports.setupDir = function(rootDIR, options) {
+  if (!rootDIR) {
+    rootDIR = process.cwd();
+  }
+  var rootDIR = path.resolve(rootDIR);
+  var envName = options.env;
+  if (!envName) {
+    envName = '';
+  }
+
+  MFWCli.setup(rootDIR, envName);
+}
+
+/**
+ * Process install command.
+ */
+module.exports.installService = function(service, options) {
+  var rootDIR = CommonFunc.getRoot(options);
+  MFWCli.install(rootDIR, service, options.save, options.default);
+}
+
+/**
+ * Process update command.
+ */
+module.exports.updateService = function(service, options) {
+  var rootDIR = CommonFunc.getRoot(options);
+  if (service != 'all') {
+    return MFWCli.update(rootDIR, service);
+  }
+  MFWCli.updateAll(rootDIR);
+}
+
+/**
+ * Process uninstall command.
+ */
+module.exports.uninstallService = function(service, options) {
+  var rootDIR = CommonFunc.getRoot(options);
+  MFWCli.uninstall(rootDIR, service, options.save);
+}
+
+/**
+ * Process start command.
+ */
+module.exports.startService = function(service, options) {
+  var rootDIR = CommonFunc.getRoot(options);
+  if (!service) {
+    service = 'all';
+  }
+  MFWCli.start(rootDIR, service, options.devel);
+}
+
+/**
+ * Process stop command.
+ */
+module.exports.stopService = function(service, options) {
+  var rootDIR = CommonFunc.getRoot(options);
+  if (!service) {
+    service = 'all';
+  }
+  MFWCli.stop(rootDIR, service);
+}
+
+/**
+ * Process env command.
+ */
+module.exports.envList = function(envName, options) {
+  var rootDIR = CommonFunc.getRoot(options);
+  if (envName) {
+    if (envName == 'default') {
+      envName = '';
+    }
+    return MFWCli.envSet(rootDIR, envName);
+  }
+  if (options.list) {
+    var envs = findEnvironments(rootDIR, options.extended);
+    console.log(envs);
+  }
+}

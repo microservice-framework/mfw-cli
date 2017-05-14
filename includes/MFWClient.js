@@ -6,10 +6,10 @@
 const MicroserviceClient = require('@microservice-framework/microservice-client');
 const EventEmitter = require('events').EventEmitter;
 const util = require('util');
-const path = require('path');
 const fs = require('fs-extra');
 const colors    = require('colors/safe');
 const Message = require('../includes/message.js');
+const CommonFunc = require('./common.js');
 
 
 /**
@@ -357,8 +357,8 @@ MFWClientClass.prototype.printMessages = function() {
 /**
  * Process create command.
  */
-function clientPOST(service, jsonData, options) {
-  var rootDIR = getRoot(options);
+module.exports.clientPOST = function(service, jsonData, options) {
+  var rootDIR = CommonFunc.getRoot(options);
   var client = new MFWClientClass();
   client.post(rootDIR, service, jsonData, options);
 }
@@ -366,8 +366,8 @@ function clientPOST(service, jsonData, options) {
 /**
  * Process read command.
  */
-function clientGET(service, id, options) {
-  var rootDIR = getRoot(options);
+module.exports.clientGET = function(service, id, options) {
+  var rootDIR = CommonFunc.getRoot(options);
   var client = new MFWClientClass();
   client.get(rootDIR, service, id, options);
 }
@@ -375,8 +375,8 @@ function clientGET(service, id, options) {
 /**
  * Process update command.
  */
-function clientPUT(service, id, jsonData, options) {
-  var rootDIR = getRoot(options);
+module.exports.clientPUT = function(service, id, jsonData, options) {
+  var rootDIR = CommonFunc.getRoot(options);
   var client = new MFWClientClass();
   client.put(rootDIR, service, id, jsonData, options);
 }
@@ -384,8 +384,8 @@ function clientPUT(service, id, jsonData, options) {
 /**
  * Process delete command.
  */
-function clientDEL(service, id, options) {
-  var rootDIR = getRoot(options);
+module.exports.clientDEL = function(service, id, options) {
+  var rootDIR = CommonFunc.getRoot(options);
   var client = new MFWClientClass();
   client.delete(rootDIR, service, id, options);
 }
@@ -393,27 +393,8 @@ function clientDEL(service, id, options) {
 /**
  * Process search command.
  */
-function clientSEARCH(service, jsonData, options) {
-  var rootDIR = getRoot(options);
+module.exports.clientSEARCH = function(service, jsonData, options) {
+  var rootDIR = CommonFunc.getRoot(options);
   var client = new MFWClientClass();
   client.search(rootDIR, service, jsonData, options);
 }
-
-
-/**
- * Get Root directory based on command options.
- */
-function getRoot(options) {
-  var rootDIR = options.root;
-  if (!rootDIR) {
-    rootDIR = process.cwd();
-  }
-  return path.resolve(rootDIR);
-}
-
-
-module.exports.clientPOST = clientPOST;
-module.exports.clientGet = clientGET;
-module.exports.clientPUT = clientPUT;
-module.exports.clientDEL = clientDEL;
-module.exports.clientSEARCH = clientSEARCH;

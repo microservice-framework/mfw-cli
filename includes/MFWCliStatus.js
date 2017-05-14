@@ -6,7 +6,6 @@ const fs = require('fs-extra');
 const tmp = require('tmp');
 const exec = require('child_process').exec;
 const spawn = require('child_process').spawn;
-const path = require('path');
 const prompt = require('prompt');
 const colors = require('colors/safe');
 const Table = require('cli-table');
@@ -14,6 +13,7 @@ const pusage = require('pidusage')
 
 const Message = require('../includes/message.js');
 const tokenGenerate = require('./token-generate.js');
+const CommonFunc = require('./common.js');
 
 prompt.message = '';
 /**
@@ -507,28 +507,14 @@ MFWCliStatusClass.prototype.printMessages = function() {
 /**
  * Process search command.
  */
-function serviceStatus(service, options) {
-  var rootDIR = getRoot(options);
+module.exports.serviceStatus = function(service, options) {
+  var rootDIR = CommonFunc.getRoot(options);
   var status = new MFWCliStatusClass();
   status.process(rootDIR, service);
 }
 
-function serviceStatusCheck(rootDir, service) {
+module.exports.serviceStatusCheck = function(rootDir, service) {
   var status = new MFWCliStatusClass();
   status.check(rootDir, service);
   return status;
 }
-
-/**
- * Get Root directory based on command options.
- */
-function getRoot(options) {
-  var rootDIR = options.root;
-  if (!rootDIR) {
-    rootDIR = process.cwd();
-  }
-  return path.resolve(rootDIR);
-}
-
-module.exports.Status = serviceStatus;
-module.exports.StatusCheck = serviceStatusCheck;
