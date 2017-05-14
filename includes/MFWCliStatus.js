@@ -507,13 +507,13 @@ MFWCliStatusClass.prototype.printMessages = function() {
 /**
  * Process search command.
  */
-module.exports.serviceStatus = function(service, options) {
+module.exports.Status = function(service, options) {
   var rootDIR = CommonFunc.getRoot(options);
   var status = new MFWCliStatusClass();
   status.process(rootDIR, service);
 }
 
-module.exports.serviceStatusCheck = function(rootDir, service) {
+module.exports.StatusCheck = function(rootDir, service) {
   var status = new MFWCliStatusClass();
   status.check(rootDir, service);
   return status;
