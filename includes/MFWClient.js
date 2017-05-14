@@ -25,8 +25,11 @@ function MFWClientClass() {
     warning: []
   };
   process.on('beforeExit', function() {
-    self.printMessages();
+    if(!self.exitPrinted) {
+      self.printMessages();
+    }
   });
+  self.exitPrinted = false;
 }
 
 util.inherits(MFWClientClass, EventEmitter);
@@ -326,6 +329,7 @@ MFWClientClass.prototype.message = function(type, message) {
  */
 MFWClientClass.prototype.printMessages = function() {
   var self = this;
+  self.exitPrinted = true;
   for (var type in self.messages) {
     if (self.messages[type].length > 0) {
       for (var i in self.messages[type]) {
