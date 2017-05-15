@@ -678,11 +678,13 @@ MFWCliClass.prototype.isModuleDownloadedForUpdate = function(err, module) {
   if (err) {
     return self.message('error', err.message);
   }
+  self.progressMessage('updating dependencies for ' + module.short);
   return exec('npm update',{cwd: module.installDir}, function(error, stdout, stderr) {
     if (error) {
       return self.message('error', module.full
         + ' updated, but `npm update` failed:' + error.message);
     }
+    self.configureModule(module);
     return self.message('ok', module.full + ' updated.');
   });
 
