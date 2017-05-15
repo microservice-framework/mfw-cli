@@ -1161,7 +1161,7 @@ MFWCliClass.prototype.restoreModules = function() {
 
   if (packageJSON.services) {
     self.on('isModuleExists', self.isModuleExists);
-    self.on('isModuleDownloaded', self.isModuleDownloaded);
+    self.on('isModuleDownloaded', self.isModuleDownloadedForUpdate);
 
     for (var shortName in packageJSON.services) {
       var fullName = '';
