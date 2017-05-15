@@ -28,6 +28,7 @@ commander.command('install <service>')
 commander.command('update <service>')
   .description('Update microservice. Use "all" to install all services saved in package.json.')
   .option('-r, --root <dir>', 'Optionaly root directory')
+  .option('-d, --default', 'Set default values')
   .action(MFWCli.updateService);
 
 commander.command('uninstall <service>')

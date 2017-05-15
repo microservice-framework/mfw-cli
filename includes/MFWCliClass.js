@@ -88,9 +88,10 @@ MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption, is
  *   Example: @microservice-framework/microservice-router
  *   Example: microservice-router
  */
-MFWCliClass.prototype.update = function(RootDirectory, module) {
+MFWCliClass.prototype.update = function(RootDirectory, module, isDefaultValues) {
   var self = this;
   self.RootDirectory = RootDirectory;
+  self.isDefaultValues = isDefaultValues;
   self.envName = self.getEnvName();
   if (self.envName != '') {
     self.progressMessage('Env:' + self.envName);
@@ -1275,7 +1276,7 @@ module.exports.updateService = function(service, options) {
   let MFWCli = new MFWCliClass();
   let rootDIR = CommonFunc.getRoot(options);
   if (service != 'all') {
-    return MFWCli.update(rootDIR, service);
+    return MFWCli.update(rootDIR, service, options.default);
   }
   MFWCli.updateAll(rootDIR);
 }
