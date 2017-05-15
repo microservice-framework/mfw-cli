@@ -893,6 +893,19 @@ MFWCliClass.prototype.setModuleDefaults = function(schema, module) {
     }
   }
 
+  if(packageDefault.services
+    && packageDefault.services[module.short]
+    && packageDefault.services[module.short].settings) {
+    for(let name in packageDefault.services[module.short].settings) {
+      let value = packageDefault.services[module.short].settings[name];
+      if(!schema.properties[name]) {
+        schema.properties[name] = {
+          default: value
+        }
+      }
+    }
+  }
+
   // Replace {token} with value
   for (var name in schema.properties) {
     var value = schema.properties[name].default;
