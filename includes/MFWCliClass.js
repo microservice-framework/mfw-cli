@@ -1327,7 +1327,7 @@ module.exports.envList = function(envName, options) {
     return MFWCli.envSet(rootDIR, envName);
   }
   if (options.list) {
-    var envs = findEnvironments(rootDIR, options.extended);
+    var envs = CommonFunc.findEnvironments(rootDIR, options.extended);
     console.log(envs);
   }
 }
