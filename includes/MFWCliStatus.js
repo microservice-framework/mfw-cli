@@ -43,6 +43,7 @@ MFWCliStatusClass.prototype.check = function(RootDirectory, module) {
   var self = this;
   self.module = module;
   self.RootDirectory = RootDirectory;
+  self.envName = self.getEnvName();
   self.on('isRootExists', self.isRootExists);
   self.on('isModuleExists', function(err, type, module) {
     if (err) {
@@ -68,6 +69,10 @@ MFWCliStatusClass.prototype.process = function(RootDirectory, module) {
   });
   self.module = module;
   self.RootDirectory = RootDirectory;
+  self.envName = self.getEnvName();
+  if (self.envName != '') {
+    self.progressMessage('Env:' + self.envName);
+  }
   self.on('isRootExists', self.isRootExists);
   self.on('isModuleExists', function(err, type, module) {
     if (err) {
@@ -361,6 +366,24 @@ MFWCliStatusClass.prototype.isRootExists = function(err, type) {
 }
 
 /**
+ * Get current environment name.
+ *
+ * @return {string} - enviroment name. Empty for default.
+ */
+MFWCliStatusClass.prototype.getEnvName = function() {
+  var self = this;
+  var currentEnv;
+  try {
+    currentEnv = fs.readFileSync(self.RootDirectory + '/.env');
+  } catch(e) {
+    currentEnv = '';
+    self.message('warning', 'failed to read .env file. Creating default one.');
+    fs.writeFileSync(self.RootDirectory + '/.env', currentEnv);
+  }
+  return currentEnv;
+}
+
+/**
  * Get package.json path based on current Enviroment.
  *
  * @return {string} - path to project package.json.
@@ -368,6 +391,9 @@ MFWCliStatusClass.prototype.isRootExists = function(err, type) {
 MFWCliStatusClass.prototype.getPackageJSONPath = function() {
   var self = this;
   var packageJSONFile = self.RootDirectory + '/package.json';
+  if (self.envName != '') {
+    packageJSONFile = self.RootDirectory + '/' + self.envName + '.package.json';
+  }
   return packageJSONFile;
 }
 
