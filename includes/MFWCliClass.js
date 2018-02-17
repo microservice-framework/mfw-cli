@@ -570,7 +570,7 @@ MFWCliClass.prototype.isPackageJSON = function(err, packageJSONPath) {
       });
     }
     if (!stats.isDirectory()) {
-      return self.message('error', newEnvService + 'is not directory. Something wrong here.');
+      return self.message('error', newEnvService + 'is not directory. Something is wrong here.');
     }
     fs.renameSync(newEnvService, servicesDir);
   });
@@ -767,7 +767,7 @@ MFWCliClass.prototype.downloadPackage = function(module) {
     if (err) {
       return self.emit('isModuleDownloaded', err, module);
     }
-    self.progressMessage('copiyng ' + module.short + ' to ' + module.installDir);
+    self.progressMessage('copying ' + module.short + ' to ' + module.installDir);
     fs.copy(module.tmpDir.name + '/package/',
       module.installDir, { overwrite: true },
       function(err) {
@@ -990,10 +990,10 @@ MFWCliClass.prototype.generatePackageJSON = function() {
 
 /**
  * Add module data to Package ( project) JSON file.
- * Happen if run install --save option.
+ * Happens when running install --save option.
  *
  * @param {object} module - module data.
- * @param {object} settings - Settings for module to use them on deploy.
+ * @param {object} settings - Settings for the module used on deploy.
  */
 MFWCliClass.prototype.addModuleToPackageJSON = function(module, settings) {
   var self = this;
@@ -1030,7 +1030,6 @@ MFWCliClass.prototype.addModuleToPackageJSON = function(module, settings) {
     }
   }
 
-
   fs.writeFile(packageJSONFile, JSON.stringify(packageJSON, null, 2), function(err) {
     if (err) {
       return self.message('error', err.message);
@@ -1040,7 +1039,7 @@ MFWCliClass.prototype.addModuleToPackageJSON = function(module, settings) {
 
 /**
  * Remove module data to Package ( project) JSON file.
- * Happen if run install --save option.
+ * Happens when running install --save option.
  *
  * @param {object} module - module data.
  */
@@ -1078,7 +1077,7 @@ MFWCliClass.prototype.getEnvName = function() {
     currentEnv = fs.readFileSync(self.RootDirectory + '/.env');
   } catch(e) {
     currentEnv = '';
-    self.message('warning', 'failed to read .env file. Creating default one.');
+    self.message('warning', 'no .env file found, creating a default one.');
     fs.writeFileSync(self.RootDirectory + '/.env', currentEnv);
   }
   return currentEnv;

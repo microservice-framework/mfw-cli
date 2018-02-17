@@ -27,13 +27,13 @@ commander.command('install <service>')
 
 commander.command('update <service>')
   .description('Update microservice. Use "all" to install all services saved in package.json.')
-  .option('-r, --root <dir>', 'Optionaly root directory')
+  .option('-r, --root <dir>', 'Optionally root directory')
   .option('-d, --default', 'Set default values')
   .action(MFWCli.updateService);
 
 commander.command('uninstall <service>')
   .description('Uninstall microservice')
-  .option('-r, --root <dir>', 'Optionaly root directory')
+  .option('-r, --root <dir>', 'Optionally root directory')
   .option('-s, --save', 'Save microservice information')
   .action(MFWCli.uninstallService);
 
@@ -41,61 +41,61 @@ commander.command('env [env]')
   .description('setup env directory')
   .option('-l, --list', 'List enabled Environments.')
   .option('-e, --extended', 'Print extended info')
-  .option('-r, --root <dir>', 'Optionaly root directory')
+  .option('-r, --root <dir>', 'Optionally root directory')
   .action(MFWCli.envList);
 
 commander.command('start <service>')
   .description('Start microservice(s). Use "all" to install all services saved in package.json.')
-  .option('-r, --root <dir>', 'Optionaly root directory')
-  .option('-d, --devel', 'Optionaly devel mode')
+  .option('-r, --root <dir>', 'Optionally root directory')
+  .option('-d, --devel', 'Optionally devel mode')
   .action(MFWCli.startService);
 
 commander.command('stop <service>')
   .description('Stop microservice(s). Use "all" to install all services saved in package.json.')
-  .option('-r, --root <dir>', 'Optionaly root directory')
+  .option('-r, --root <dir>', 'Optionally root directory')
   .action(MFWCli.stopService);
 
 commander.command('status [service]')
   .description('Microservice(s) status')
-  .option('-r, --root <dir>', 'Optionaly root directory')
+  .option('-r, --root <dir>', 'Optionally root directory')
   .action(status.Status);
 
 commander.command('client-create <service> <JSONDATA>')
   .description('Create resource in service.')
-  .option('-r, --root <dir>', 'Optionaly root directory')
-  .option('-t, --token <token>', 'Optionaly token. If no token provided, SECURE_KEY used.')
+  .option('-r, --root <dir>', 'Optionally root directory')
+  .option('-t, --token <token>', 'Optionally token. If no token provided, SECURE_KEY used.')
   .option('-a, --accesstoken <accesstoken>',
-    'Optionaly access token. If no token provided, SECURE_KEY used instead.')
+    'Optionally access token. If no token is provided, then SECURE_KEY is used instead.')
   .action(client.clientPOST);
 
 commander.command('client-read <service> <id>')
   .description('Read resource by ID from service.')
-  .option('-r, --root <dir>', 'Optionaly root directory')
-  .option('-t, --token <token>', 'Optionaly token.')
-  .option('-a, --accesstoken <accesstoken>', 'Optionaly access token.')
+  .option('-r, --root <dir>', 'Optionally root directory')
+  .option('-t, --token <token>', 'Optionally token.')
+  .option('-a, --accesstoken <accesstoken>', 'Optionally access token.')
   .action(client.clientGet);
 
 commander.command('client-update <service> <id> <JSONDATA>')
   .description('Update resource by ID for service.')
-  .option('-r, --root <dir>', 'Optionaly root directory')
-  .option('-t, --token <token>', 'Optionaly token. If no token provided, SECURE_KEY used.')
+  .option('-r, --root <dir>', 'Optionally root directory')
+  .option('-t, --token <token>', 'Optionally token. If no token is provided, then SECURE_KEY used.')
   .option('-a, --accesstoken <accesstoken>',
-    'Optionaly access token. If no token provided, SECURE_KEY used instead.')
+    'Optionally access token. If no token is provided, then SECURE_KEY is used instead.')
   .action(client.clientPUT);
 
 commander.command('client-delete <service> <id>')
   .description('Delete resource by ID from service.')
-  .option('-r, --root <dir>', 'Optionaly root directory')
-  .option('-t, --token <token>', 'Optionaly token.')
+  .option('-r, --root <dir>', 'Optionally root directory')
+  .option('-t, --token <token>', 'Optionally token.')
   .option('-a, --accesstoken <accesstoken>', 'Optionaly access token.')
   .action(client.clientDEL);
 
 commander.command('client-search <service> <JSONDATA>')
   .description('Search resource in service.')
-  .option('-r, --root <dir>', 'Optionaly root directory')
-  .option('-t, --token <token>', 'Optionaly token. If no token provided, SECURE_KEY used.')
+  .option('-r, --root <dir>', 'Optionally root directory')
+  .option('-t, --token <token>', 'Optionally token. If no is token provided, then SECURE_KEY is used instead.')
   .option('-a, --accesstoken <accesstoken>',
-    'Optionaly access token. If no token provided, SECURE_KEY used instead.')
+    'Optionally access token. If no token is provided, then SECURE_KEY is used instead.')
   .action(client.clientSEARCH);
 
 
