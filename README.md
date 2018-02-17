@@ -1,24 +1,35 @@
 # mfw-cli
-Console utility for @microservice-framework
+Console utility for [@microservice-framework](https://github.com/microservice-framework). The Microservice-Framework allows you to turn packages into API endpoints. You can query them using CRUD... Now, with **Search**.
 
-# Setup
+# Installation
 
 ```
 # npm install @microservice-framework/mfw-cli -g
 ```
 
-## Setup new project 
+## Setup new project
 
 ```
 # mfw setup [dir]
 ```
 
-Will generate directory structure in [dir] or in current directory and create package.json for project.
+Running `setup` will generate a directory structure in `[dir]` or the current directory and create a `package.json` for the project.
 
-You can run it on already exists directory with exists package.json
-In this case it will download and configure silently all services based on default or saved in package.json file settings per service.
+You can run it within an already existing directory that contains a `package.json` file. If you choose to do so `mfw-cli` will download and silently configure all services based on either the default or what you have saved for each service within your `package.json` file.
 
-## Install service 
+## Install service
+
+Once your project has been configured, the next step is to add services. Each dservice represents one end-point.
+
+A `[service]` can be a...
+  - npm package name.
+    - Downloaded from the [npm](https://www.npmjs.com) registry.
+  - Repository, like: git@github.com:owner/repo
+    - Downloaded from git.
+  - Local path to a directory containing a package.
+    - Package will be copied.
+
+It supports all of the formats that `npm pack` supports: a package folder, tarball, tarball url, name@tag, name@version, name, or scoped name, etc.
 
 ```
 # mfw install [service]
@@ -30,17 +41,12 @@ Example:
 # mfw install @microservice-framework/microservice-router --save
 ```
 
-Will install and ask for configurations of microservice-router.
-With `--save` option all settings and service will be added to package.json file of the project.
+The installation will begin, then ask for `microservice-router` configuration details. Using the `--save` option will export all the configuration details to the `package.json` file of the project.
 
-`[service]` - could be:
-  - npm package name. Will be downloaded from npm registry
-  - local path to directory with package (will be copied)
-  - github:owner/repo - will be downloaded from github.
 
-Basically support all formats as `npm pack` supports.
-  
-## Uninstall service 
+## Uninstall service
+
+If you'd like to uninstall a package, simply:
 
 ```
 # mfw uninstall [service]
@@ -52,11 +58,13 @@ Example:
 # mfw uninstall @microservice-framework/microservice-router --save
 ```
 
-Will remove microservice-router from services and clean up directories.
-With `--save` option all settings and service will be removed from package.json file of the project.
+
+The `microservice-router` package will be removed from services. The directories will be cleaned up. Using the `--save` option will remove the service and all of the setting from the `package.json` file of the project.
 
 
-## Update service 
+## Update service
+
+If you need to update the service to coincide with changes to the root package, you can update.
 
 ```
 # mfw update [service]
@@ -68,54 +76,75 @@ Example:
 # mfw update @microservice-framework/microservice-router
 ```
 
-Will download latest microservice-router and overwrite it.
+Updating will download the latest `microservice-router`, overwriting the old package.
 
 ```
 # mfw update all
 ```
 
-Will update all services to latest version
+You can update all services to the latest version.
 
 
 ### Switch enviroment
 
-mfw supports enviroments. So you can keep your local, stage, dev, production info in one package.
+mfw supports different environments. You can keep your local, stage, dev, production information within one package.
 
-Each ENV data contain in `[envName.]package.json`. `default` env is equal to `package.json`
+Each ENV data can be written using this pattern:
+
+`[envName.]package.json`
+
+Example:
+
+`dev.package.json`
+
+The `default` env is `package.json`
 
 ```
 # mfw env [env]
 ```
 
-Will switch to exists one or generate new one.
+You can switch to existing environments, or generate new one.
 
-## Start service 
+Example:
+
+```
+# mfw env dev
+```
+
+## Start service
+
+Once your services have been installed, you can start them.
 
 ```
 # mfw start [service]
 ```
 
-Will start service. IF `all` provided - all services will be started.
+ If `all` is provided, then all services will be started.
 
 
-## Stop service 
+## Stop service
+
+You can stop them, too!
 
 ```
 # mfw stop [service]
 ```
 
-Will stop service. IF `all` provided - all services will be stopped.
+If `all` provided, all services will be stopped.
 
+## Status service
 
-
-## Status service 
+You can display the status for specified services or for all service.
 
 ```
+## Specific service
 # mfw status <service>
+
+## All services
+# mfw status
 ```
 
-Display status for specified service or for all services without option.
-Status include CPU, MEMORY usage and up/down + version and pid information
+The status report will include CPU, MEMORY usage and up/down + version and pid information
 
 ## Microservice client integration
 
