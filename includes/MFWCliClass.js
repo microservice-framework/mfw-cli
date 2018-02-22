@@ -9,6 +9,7 @@ const spawn = require('child_process').spawn;
 const path = require('path');
 const prompt = require('prompt');
 const colors    = require('colors/safe');
+const tar = require('tar');
 const CommonFunc = require('./common.js');
 
 const Message = require('../includes/message.js');
@@ -762,19 +763,27 @@ MFWCliClass.prototype.checkDirectory = function(subDir) {
 MFWCliClass.prototype.downloadPackage = function(module) {
   var self = this;
   self.progressMessage('downloading ' + module.short);
-  exec('npm pack ' + module.full + '|xargs tar -xzpf', {cwd: module.tmpDir.name},
+  exec('npm pack ' + module.full, {cwd: module.tmpDir.name},
   function(err, stdout, stderr) {
     if (err) {
       return self.emit('isModuleDownloaded', err, module);
     }
-    self.progressMessage('copiyng ' + module.short + ' to ' + module.installDir);
-    fs.copy(module.tmpDir.name + '/package/',
-      module.installDir, { overwrite: true },
-      function(err) {
-        fs.emptyDirSync(module.tmpDir.name);
-        module.tmpDir.removeCallback();
+    tar.x({
+      file: module.tmpDir.name + '/' + stdout.trim(),
+      cwd: module.tmpDir.name
+    },function(err){
+      if (err) {
         return self.emit('isModuleDownloaded', err, module);
+      }
+      self.progressMessage('copiyng ' + module.short + ' to ' + module.installDir);
+      fs.copy(module.tmpDir.name + '/package/',
+        module.installDir, { overwrite: true },
+        function(err) {
+          fs.emptyDirSync(module.tmpDir.name);
+          module.tmpDir.removeCallback();
+          return self.emit('isModuleDownloaded', err, module);
       });
+    });
   });
 }
 

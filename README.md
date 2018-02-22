@@ -124,3 +124,7 @@ Status include CPU, MEMORY usage and up/down + version and pid information
  - `U`pdate (PUT): `mfw client-update [options] <service> <id> <JSONDATA>` - update record by ID.
  - `D`elete (DELETE): `mfw client-delete [options] <service> <id>` - delete record from microservice by ID.
  - `S`earch (SEARCH): `mfw client-search [options] <service> <JSONDATA>` - search records by query.
+
+## CHANGELOG
+
+- `1.2.6` - Windows compatibility bugfix for install and update.
