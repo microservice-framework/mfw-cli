@@ -1162,8 +1162,6 @@ MFWCliClass.prototype.getEnvName = function() {
     currentEnv = fs.readFileSync(self.RootDirectory + '/.env');
   } catch(e) {
     currentEnv = '';
-    self.message('warning', 'no .env file found, creating a default one.');
-    fs.writeFileSync(self.RootDirectory + '/.env', currentEnv);
   }
   return currentEnv;
 }
