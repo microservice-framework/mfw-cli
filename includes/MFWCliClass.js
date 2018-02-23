@@ -567,7 +567,6 @@ MFWCliClass.prototype.verifyRootDir = function() {
     }
 
   } catch(e) {
-    console.log(e);
     self.message('error', self.getPackageJSONPath() + ' does not exists');
     resultStatus = false;
   }
@@ -1250,7 +1249,8 @@ MFWCliClass.prototype.getEnvName = function() {
   var self = this;
   var currentEnv;
   try {
-    currentEnv = fs.readFileSync(self.RootDirectory + '/.env');
+    currentEnv = fs.readFileSync(self.RootDirectory + '/.env') + '';
+    currentEnv = currentEnv.trim();
   } catch(e) {
     currentEnv = '';
   }
