@@ -524,6 +524,32 @@ MFWCliClass.prototype.verifyRootDir = function() {
 
   }
 
+  // Check logs directory
+  try {
+    stat = fs.statSync(self.RootDirectory + '/logs/');
+    if (!stat.isDirectory()) {
+      self.message('error', 'Root dir: ' + self.RootDirectory + '/logs/ is not a directory');
+      resultStatus = false;
+    }
+  } catch(e) {
+    self.message('error', 'Root dir: ' + self.RootDirectory + '/logs/ doesnot exists');
+    resultStatus = false;
+
+  }
+
+  // Check logs directory
+  try {
+    stat = fs.statSync(self.RootDirectory + '/pids/');
+    if (!stat.isDirectory()) {
+      self.message('error', 'Root dir: ' + self.RootDirectory + '/pids/ is not a directory');
+      resultStatus = false;
+    }
+  } catch(e) {
+    self.message('error', 'Root dir: ' + self.RootDirectory + '/pids/ doesnot exists');
+    resultStatus = false;
+
+  }
+
   // Check if package.json exists.
   try {
     stat = fs.statSync(self.getPackageJSONPath());
