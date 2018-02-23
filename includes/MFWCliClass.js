@@ -1274,6 +1274,14 @@ module.exports.setupDir = function(rootDIR, options) {
 module.exports.installService = function(service, options) {
   let MFWCli = new MFWCliClass();
   let rootDIR = CommonFunc.getRoot(options);
+  let possibleLocalPath = path.resolve(service);
+  try{
+    let stat = fs.statSync(possibleLocalPath);
+    if(possibleLocalPath == rootDIR) {
+      Message.error('You could not install service into itself :)');
+      return;
+    }
+  } catch(e){}
   MFWCli.install(rootDIR, service, options.save, options.default);
 }
 
