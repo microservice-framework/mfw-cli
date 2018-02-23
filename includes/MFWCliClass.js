@@ -416,6 +416,65 @@ MFWCliClass.prototype.stopService = function(serviceName, name) {
   self.progressMessage('stopping ' + serviceName + ':' + name);
   var child = spawn('npm', ['run', name, '-s' ], {cwd: serviceDir, stdio: 'inherit'});
 }
+/**
+ * Validate service directory as a microservice
+ *
+ * @return {boolean} true if valid.
+ */
+MFWCliClass.prototype.verifyServiceDir = function(directory) {
+  var self = this;
+  let resultStatus = true;
+  let stat;
+  try {
+    stat = fs.statSync(directory);
+    if (!stat.isDirectory()) {
+      self.message('error', directory + ' is not a directory');
+      resultStatus = false;
+    }
+  } catch(e) {
+    self.message('error', directory + ' does not exists');
+    resultStatus = false;
+  }
+
+  // Check if package.json exists.
+  try {
+    stat = fs.statSync(directory + '/package.json');
+    if (!stat.isFile()) {
+      self.message('error', directory + '/package.json is not a valid file');
+      resultStatus = false;
+    } else {
+      // Check if package.json is valid file.
+      try {
+        let packageJSON = JSON.parse(fs.readFileSync(directory + '/package.json'));
+        if (!packageJSON.scripts) {
+          self.message('error', 'package.json.scripts is not defined');
+          resultStatus = false;
+        } else {
+          if (!packageJSON.scripts.start) {
+            self.message('error', 'package.json.scripts.start is not defined');
+            resultStatus = false;
+          }
+          if (!packageJSON.scripts.stop) {
+            self.message('error', 'package.json.scripts.stop is not defined');
+            resultStatus = false;
+          }
+          if (!packageJSON.scripts.status) {
+            self.message('error', 'package.json.scripts.status is not defined');
+            resultStatus = false;
+          }
+        }
+      } catch (e) {
+        self.message('error', e + ' in file: ' + directory + '/package.json');
+        resultStatus = false;
+      }
+    }
+  } catch(e) {
+    console.log(e);
+    self.message('error', directory + '/package.json does not exists');
+    resultStatus = false;
+  }
+  return resultStatus;
+}
 
 /**
  * Validate Root directory as a project directory..
@@ -850,6 +909,12 @@ MFWCliClass.prototype.downloadPackage = function(module) {
     },function(err) {
       if (err) {
         return self.emit('isModuleDownloaded', err, module);
+      }
+      if (!self.verifyServiceDir(module.tmpDir.name + '/package/')) {
+        fs.emptyDirSync(module.tmpDir.name);
+        module.tmpDir.removeCallback();
+        let err = new Error(module.short + ' is not valid microservice package');
+        return self.emit('isModuleDownloaded', err , module);
       }
       self.progressMessage('copying ' + module.short + ' to ' + module.installDir);
       fs.copy(module.tmpDir.name + '/package/',
