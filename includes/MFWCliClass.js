@@ -66,9 +66,13 @@ MFWCliClass.prototype.setup = function(RootDirectory, envName) {
 MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption, isDefaultValues) {
   var self = this;
   self.RootDirectory = RootDirectory;
+  self.envName = self.getEnvName();
+  if (!self.verifyRootDir()) {
+    return self.message('error', 'Installation Failed');
+  }
   self.isSaveOption = isSaveOption;
   self.isDefaultValues = isDefaultValues;
-  self.envName = self.getEnvName();
+
   if (self.envName != '') {
     self.progressMessage('Env:' + self.envName);
   }
@@ -414,6 +418,79 @@ MFWCliClass.prototype.stopService = function(serviceName, name) {
 }
 
 /**
+ * Validate Root directory as a project directory..
+ *
+ * @return {boolean} true if valid.
+ */
+MFWCliClass.prototype.verifyRootDir = function() {
+  var self = this;
+  var stat;
+  // Check ROOT DIR.
+  let resultStatus = true;
+  try {
+    stat = fs.statSync(self.RootDirectory);
+    if (!stat.isDirectory()) {
+      self.message('error', 'Root dir: ' + self.RootDirectory + ' is not a directory');
+      resultStatus = false;
+    }
+  } catch(e) {
+    self.message('error', 'Root dir: ' + self.RootDirectory + ' doesnot exists');
+    resultStatus = false;
+
+  }
+
+  // Check services directory
+  try {
+    stat = fs.statSync(self.RootDirectory + '/services/');
+    if (!stat.isDirectory()) {
+      self.message('error', 'Root dir: ' + self.RootDirectory + '/services/ is not a directory');
+      resultStatus = false;
+    }
+  } catch(e) {
+    self.message('error', 'Root dir: ' + self.RootDirectory + '/services/ doesnot exists');
+    resultStatus = false;
+
+  }
+
+  // Check configs directory
+  try {
+    stat = fs.statSync(self.RootDirectory + '/configs/');
+    if (!stat.isDirectory()) {
+      self.message('error', 'Root dir: ' + self.RootDirectory + '/configs/ is not a directory');
+      resultStatus = false;
+    }
+  } catch(e) {
+    self.message('error', 'Root dir: ' + self.RootDirectory + '/configs/ doesnot exists');
+    resultStatus = false;
+
+  }
+
+  // Check if package.json exists.
+  try {
+    stat = fs.statSync(self.getPackageJSONPath());
+    if (!stat.isFile()) {
+      self.message('error', self.getPackageJSONPath() + ' is not a valid file');
+      resultStatus = false;
+    } else {
+      // Check if package.json is valid file.
+      try {
+        JSON.parse(fs.readFileSync(self.getPackageJSONPath()));
+      } catch (e) {
+        self.message('error', e + ' in file: ' + self.getPackageJSONPath());
+        resultStatus = false;
+      }
+    }
+
+  } catch(e) {
+    console.log(e);
+    self.message('error', self.getPackageJSONPath() + ' does not exists');
+    resultStatus = false;
+  }
+
+  return resultStatus;
+}
+
+/**
  * Prepare module object.
  *
  * @param {string} RootDirectory - resolved path to project directory.
@@ -548,7 +625,6 @@ MFWCliClass.prototype.isModuleExistsForUninstall = function(err, type, module) {
 MFWCliClass.prototype.isPackageJSON = function(err, packageJSONPath) {
   var self = this;
   if (err) {
-    console.log(err);
     return self.message('error', err.message);
   }
 
@@ -771,7 +847,7 @@ MFWCliClass.prototype.downloadPackage = function(module) {
     tar.x({
       file: module.tmpDir.name + '/' + stdout.trim(),
       cwd: module.tmpDir.name
-    },function(err){
+    },function(err) {
       if (err) {
         return self.emit('isModuleDownloaded', err, module);
       }
@@ -782,7 +858,7 @@ MFWCliClass.prototype.downloadPackage = function(module) {
           fs.emptyDirSync(module.tmpDir.name);
           module.tmpDir.removeCallback();
           return self.emit('isModuleDownloaded', err, module);
-      });
+        });
     });
   });
 }
@@ -903,12 +979,12 @@ MFWCliClass.prototype.setModuleDefaults = function(schema, module) {
     }
   }
 
-  if(packageDefault.services
+  if (packageDefault.services
     && packageDefault.services[module.short]
     && packageDefault.services[module.short].settings) {
-    for(let name in packageDefault.services[module.short].settings) {
+    for (let name in packageDefault.services[module.short].settings) {
       let value = packageDefault.services[module.short].settings[name];
-      if(!schema.properties[name]) {
+      if (!schema.properties[name]) {
         schema.properties[name] = {
           default: value
         }
@@ -983,7 +1059,7 @@ MFWCliClass.prototype.generatePackageJSON = function() {
       prompt.get(schema, function(err, result) {
         if (err) {
           self.emit('isPackageJSON', err, packageJSONFile);
-          return self.message('error', e.message);
+          return;
         }
         fs.writeFile(packageJSONFile, JSON.stringify(result, null, 2), function(err) {
           if (err) {
@@ -1275,13 +1351,13 @@ module.exports.installService = function(service, options) {
   let MFWCli = new MFWCliClass();
   let rootDIR = CommonFunc.getRoot(options);
   let possibleLocalPath = path.resolve(service);
-  try{
+  try {
     let stat = fs.statSync(possibleLocalPath);
-    if(possibleLocalPath == rootDIR) {
+    if (possibleLocalPath == rootDIR) {
       Message.error('You could not install service into itself :)');
       return;
     }
-  } catch(e){}
+  } catch(e) {}
   MFWCli.install(rootDIR, service, options.save, options.default);
 }
 

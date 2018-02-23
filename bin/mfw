@@ -93,7 +93,8 @@ commander.command('client-delete <service> <id>')
 commander.command('client-search <service> <JSONDATA>')
   .description('Search resource in service.')
   .option('-r, --root <dir>', 'Optionally root directory')
-  .option('-t, --token <token>', 'Optionally token. If no is token provided, then SECURE_KEY is used instead.')
+  .option('-t, --token <token>',
+    'Optionally token. If no is token provided, then SECURE_KEY is used instead.')
   .option('-a, --accesstoken <accesstoken>',
     'Optionally access token. If no token is provided, then SECURE_KEY is used instead.')
   .action(client.clientSEARCH);
