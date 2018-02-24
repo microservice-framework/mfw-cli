@@ -101,7 +101,7 @@ MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption, is
   var self = this;
   self.RootDirectory = RootDirectory;
   self.envName = self.getEnvName();
-  if (!self.verifyRootDir()) {
+  if (!self.validateRootDir()) {
     return self.message('error', 'Installation Failed');
   }
   self.isSaveOption = isSaveOption;
@@ -132,6 +132,9 @@ MFWCliClass.prototype.update = function(RootDirectory, module, isDefaultValues) 
   self.RootDirectory = RootDirectory;
   self.isDefaultValues = isDefaultValues;
   self.envName = self.getEnvName();
+  if (!self.validateRootDir()) {
+    return self.message('error', 'Installation Failed');
+  }
   if (self.envName != '') {
     self.progressMessage('Env:' + self.envName);
   }
@@ -153,6 +156,9 @@ MFWCliClass.prototype.updateAll = function(RootDirectory) {
   var self = this;
   self.RootDirectory = RootDirectory;
   self.envName = self.getEnvName();
+  if (!self.validateRootDir()) {
+    return self.message('error', 'Installation Failed');
+  }
   if (self.envName != '') {
     self.progressMessage('Env:' + self.envName);
   }
@@ -484,15 +490,33 @@ MFWCliClass.prototype.verifyServiceDir = function(directory) {
           self.message('error', 'package.json.scripts is not defined');
           resultStatus = false;
         } else {
-          if (!packageJSON.scripts.start) {
+          let listToStart = [];
+          for (var name in packageJSON.scripts) {
+            if (name.indexOf('start') != -1) {
+              listToStart.push(name);
+            }
+          }
+          if (listToStart.length == 0) {
             self.message('error', 'package.json.scripts.start is not defined');
             resultStatus = false;
           }
-          if (!packageJSON.scripts.stop) {
+          let listToStop = [];
+          for (var name in packageJSON.scripts) {
+            if (name.indexOf('stop') != -1) {
+              listToStop.push(name);
+            }
+          }
+          if (listToStop.length == 0) {
             self.message('error', 'package.json.scripts.stop is not defined');
             resultStatus = false;
           }
-          if (!packageJSON.scripts.status) {
+          let listToStatus = [];
+          for (var name in packageJSON.scripts) {
+            if (name.indexOf('status') != -1) {
+              listToStatus.push(name);
+            }
+          }
+          if (listToStatus.length == 0) {
             self.message('error', 'package.json.scripts.status is not defined');
             resultStatus = false;
           }
@@ -607,7 +631,7 @@ MFWCliClass.prototype.validateRootDirForInit = function() {
  *
  * @return {boolean} true if valid.
  */
-MFWCliClass.prototype.verifyRootDir = function() {
+MFWCliClass.prototype.validateRootDir = function() {
   var self = this;
   var stat;
   // Check ROOT DIR.
@@ -834,15 +858,15 @@ MFWCliClass.prototype.performEnvSwitch = function() {
   var self = this;
 
   let servicesDir = self.RootDirectory + '/services';
-  try{
+  try {
     fs.removeSync(self.RootDirectory + '/.services.' + self.currentEnv);
-  }catch(e){
+  }catch(e) {
     console.log(e);
   }
   fs.renameSync(servicesDir, self.RootDirectory + '/.services.' + self.currentEnv);
 
   let newEnvService = self.RootDirectory + '/.services.' + self.envName;
-  try{
+  try {
     let stat = fs.statSync(newEnvService);
     if (!stats.isDirectory()) {
       return self.message('error', newEnvService + 'is not directory. Something is wrong here.');
@@ -1542,7 +1566,9 @@ MFWCliClass.prototype.restoreModules = function() {
         self.checkModule(module);
       });
     }
+    return;
   }
+  self.message('ok', 'No services to install');
 }
 
 /**
@@ -1648,6 +1674,14 @@ module.exports.initProject = function(rootDIR, options) {
 module.exports.installService = function(service, options) {
   let MFWCli = new MFWCliClass();
   let rootDIR = CommonFunc.getRoot(options);
+  if (!service) {
+    service = 'all';
+  }
+
+  if (service == 'all') {
+    return MFWCli.updateAll(rootDIR);
+  }
+
   let possibleLocalPath = path.resolve(service);
   try {
     let stat = fs.statSync(possibleLocalPath);
@@ -1656,6 +1690,7 @@ module.exports.installService = function(service, options) {
       return;
     }
   } catch(e) {}
+
   MFWCli.install(rootDIR, service, options.save, options.default);
 }
 
@@ -1665,10 +1700,13 @@ module.exports.installService = function(service, options) {
 module.exports.updateService = function(service, options) {
   let MFWCli = new MFWCliClass();
   let rootDIR = CommonFunc.getRoot(options);
-  if (service != 'all') {
-    return MFWCli.update(rootDIR, service, options.default);
+  if (!service) {
+    service = 'all';
   }
-  MFWCli.updateAll(rootDIR);
+  if (service == 'all') {
+    return MFWCli.updateAll(rootDIR);
+  }
+  return MFWCli.update(rootDIR, service, options.default);
 }
 
 /**

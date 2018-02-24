@@ -13,25 +13,22 @@ const client = require('../includes/MFWClient.js');
 
 commander.version(pkg.version).usage('[cmd] [options] [mode]');
 
-commander.command('setup [dir]')
-  .description('setup directory')
-  .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
-  .action(MFWCli.setupDir);
-
 commander.command('init [dir]')
   .description('Init directory as a project.')
   .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
   .action(MFWCli.initProject);
 
-commander.command('install <service>')
-  .description('Install microservice. Use "all" to install all services saved in package.json.')
+commander.command('install [service]')
+  .description('Install microservice.'
+    + 'Use nothing or "all" to install all services saved in package.json.')
   .option('-r, --root <dir>', 'Optionaly root directory')
   .option('-s, --save', 'Save microservice information')
   .option('-d, --default', 'Set default values')
   .action(MFWCli.installService);
 
-commander.command('update <service>')
-  .description('Update microservice. Use "all" to install all services saved in package.json.')
+commander.command('update [service]')
+  .description('Update microservice.'
+    + 'Use nothing or "all" to update or install all services saved in package.json.')
   .option('-r, --root <dir>', 'Optionally root directory')
   .option('-d, --default', 'Set default values')
   .action(MFWCli.updateService);
