@@ -189,7 +189,16 @@ MFWCliClass.prototype.envSet = function(RootDirectory, envName) {
     }
     return self.message('error', 'Already in: ' + self.envName);
   }
-  self.on('isPackageJSON', self.isPackageJSON);
+  self.on('isPackageJSON', function(err, packageJSONPath) {
+    if (err) {
+      return self.message('error', e.message);
+    }
+    self.currentEnv = self.getEnvName();
+    if (self.currentEnv !== self.envName) {
+      self.isDefaultValues = true;
+      self.performEnvSwitch();
+    }
+  });
   self.checkPackageJSON();
 
 }
@@ -848,7 +857,7 @@ MFWCliClass.prototype.performEnvSwitch = function() {
 
   let newEnvService = self.RootDirectory + '/.services.' + self.envName;
   try {
-    let stat = fs.statSync(newEnvService);
+    let stats = fs.statSync(newEnvService);
     if (!stats.isDirectory()) {
       return self.message('error', newEnvService + 'is not directory. Something is wrong here.');
     }
@@ -859,6 +868,7 @@ MFWCliClass.prototype.performEnvSwitch = function() {
     }
     self.message('ok', 'switched to: ' + self.envName);
   } catch(e) {
+    self.message('warning', e);
     fs.mkdir(servicesDir, function(err) {
       if (err) {
         return self.message('error', err.message);
@@ -872,50 +882,6 @@ MFWCliClass.prototype.performEnvSwitch = function() {
     });
     return;
   }
-}
-
-/**
- * Event callback on isPackageJSON event.
- *
- * @param {object|null} err - if error happen on checking package.json.
- * @param {string} packageJSONPath - path to package.json (of the project).
- */
-MFWCliClass.prototype.isPackageJSON = function(err, packageJSONPath) {
-  var self = this;
-  if (err) {
-    return self.message('error', err.message);
-  }
-
-  var servicesDir = self.RootDirectory + '/services';
-  if (self.currentEnv) {
-    fs.removeSync(self.RootDirectory + '/.services.' + self.currentEnv);
-    fs.renameSync(servicesDir,
-    self.RootDirectory + '/.services.' + self.currentEnv);
-  }
-
-  var newEnvService = self.RootDirectory + '/.services.' + self.envName;
-
-  fs.stat(newEnvService, function(err, stats) {
-    if (err) {
-      return fs.mkdir(servicesDir, function(err) {
-        if (err) {
-          return self.message('error', err.message);
-        }
-        self.restoreModules();
-      });
-    }
-    if (!stats.isDirectory()) {
-      return self.message('error', newEnvService + 'is not directory. Something is wrong here.');
-    }
-    fs.renameSync(newEnvService, servicesDir);
-  });
-
-  fs.writeFileSync(self.RootDirectory + '/.env', self.envName);
-
-  if (self.envName == '') {
-    return self.message('ok', 'switched to: default');
-  }
-  self.message('ok', 'switched to: ' + self.envName);
 }
 
 /**
