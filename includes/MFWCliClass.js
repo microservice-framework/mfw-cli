@@ -71,25 +71,6 @@ MFWCliClass.prototype.initProject = function(RootDirectory, envName) {
 }
 
 /**
- * Prepare project directory.
- *
- * @param {string} RootDirectory - resolved path to project directory.
- * @param {string} envName - Environment name. Helps to separate production, stage and etc.
- */
-MFWCliClass.prototype.setup = function(RootDirectory, envName) {
-  var self = this;
-  self.RootDirectory = RootDirectory;
-  self.envName = envName;
-  if (self.envName != '') {
-    self.progressMessage('Env:' + self.envName);
-  }
-
-  self.on('isRootExists', self.isRootExists);
-  self.on('isDirExists', self.isDirExists);
-  self.checkRootDirectory();
-}
-
-/**
  * Install service to ROOTDIR/services/SERVICE_NAME directory.
  *
  * @param {string} RootDirectory - resolved path to project directory.
@@ -1632,23 +1613,6 @@ MFWCliClass.prototype.printMessages = function() {
       }
     }
   }
-}
-
-/**
- * Process setup command.
- */
-module.exports.setupDir = function(rootDIR, options) {
-  let MFWCli = new MFWCliClass();
-  if (!rootDIR) {
-    rootDIR = process.cwd();
-  }
-  rootDIR = path.resolve(rootDIR);
-  var envName = options.env;
-  if (!envName) {
-    envName = '';
-  }
-
-  MFWCli.setup(rootDIR, envName);
 }
 
 /**
