@@ -14,6 +14,10 @@ Message.prototype.error = function(message) {
   console.log(colors.red('\t[err]\t') + colors.gray(message));
 }
 
+Message.prototype.unknown = function(message) {
+  console.log(colors.red('\t[unknown]\t') + colors.gray(message));
+}
+
 Message.prototype.ok = function(message) {
   console.log(colors.green('\t[ok]\t') + colors.gray(message));
 }

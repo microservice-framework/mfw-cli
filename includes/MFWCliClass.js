@@ -27,10 +27,16 @@ function MFWCliClass() {
   self.messages = {
     ok: [],
     error: [],
-    warning: []
+    warning: [],
+    unknown: [],
   };
+  self.isExiting = false;
   process.on('beforeExit', function() {
-    self.printMessages();
+    // prevent multiple printMessages on multiple beforeExit calls.
+    if(!self.isExiting) {
+      self.isExiting = true;
+      self.printMessages();
+    }
   });
 }
 
@@ -1523,18 +1529,18 @@ MFWCliClass.prototype.restoreModules = function() {
  */
 MFWCliClass.prototype.installGitIgnore = function() {
   var self = this;
+  let gitIgnore = path.resolve(__dirname + '/../templates/gitignore');
   fs.stat(self.RootDirectory + '/.gitignore', function(err, stats) {
     if (err) {
-      var gitIgnore = path.resolve(__dirname + '/../templates/gitignore');
-      fs.copy(gitIgnore, self.RootDirectory + '/.gitignore', { overwrite: true }, function(err) {
+      fs.copy(gitIgnore, self.RootDirectory + '/.gitignore',
+        { overwrite: true },
+        function(err) {
         if (err) {
           return self.message('error', err.message);
         }
         return self.message('ok', '.gitignore copied');
       });
-      return;
     }
-    self.message('warning', '.gitignore already exists');
   });
 }
 
@@ -1543,6 +1549,9 @@ MFWCliClass.prototype.installGitIgnore = function() {
  */
 MFWCliClass.prototype.message = function(type, message) {
   var self = this;
+  if(!self.messages[type]) {
+    type = 'unknown';
+  }
   self.messages[type].push(message);
 }
 
@@ -1558,24 +1567,10 @@ MFWCliClass.prototype.progressMessage = function(message) {
  */
 MFWCliClass.prototype.printMessages = function() {
   var self = this;
-  for (var type in self.messages) {
+  for (let type in self.messages) {
     if (self.messages[type].length > 0) {
-      for (var i in self.messages[type]) {
-        var message = self.messages[type][i];
-        switch (type){
-          case 'error': {
-            Message.error(message);
-            break;
-          }
-          case 'warning': {
-            Message.warning(message);
-            break;
-          }
-          case 'ok': {
-            Message.ok(message);
-            break;
-          }
-        }
+      for (let message of self.messages[type]) {
+        Message[type](message);
       }
     }
   }
