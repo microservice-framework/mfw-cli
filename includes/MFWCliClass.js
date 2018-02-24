@@ -37,6 +37,40 @@ function MFWCliClass() {
 util.inherits(MFWCliClass, EventEmitter);
 
 /**
+ * Prepare project directory and package.json.
+ *
+ * @param {string} RootDirectory - resolved path to project directory.
+ * @param {string} envName - Environment name. Helps to separate production, stage and etc.
+ */
+MFWCliClass.prototype.initProject = function(RootDirectory, envName) {
+  var self = this;
+  self.RootDirectory = RootDirectory;
+  self.envName = envName;
+  if (self.envName != '') {
+    self.progressMessage('Env:' + self.envName);
+  }
+
+  if (!self.validateRootDirForInit()) {
+    return self.message('error', 'Init Failed');
+  }
+
+  self.installGitIgnore();
+  self.on('isPackageJSON', function(err, packageJSONPath) {
+    if (err) {
+      return self.message('error', e.message);
+    }
+    self.message('ok', 'Init completed');
+    self.currentEnv = self.getEnvName();
+    if (self.currentEnv !== self.envName) {
+      self.isDefaultValues = true;
+      self.performEnvSwitch();
+    }
+  });
+  self.generatePackageJSON();
+
+}
+
+/**
  * Prepare project directory.
  *
  * @param {string} RootDirectory - resolved path to project directory.
@@ -475,6 +509,98 @@ MFWCliClass.prototype.verifyServiceDir = function(directory) {
   }
   return resultStatus;
 }
+/**
+ * Validate Root directory as a project directory..
+ *
+ * @return {boolean} true if valid.
+ */
+MFWCliClass.prototype.validateRootDirForInit = function() {
+  var self = this;
+  let stat;
+  try {
+    stat = fs.statSync(self.RootDirectory);
+    if (!stat.isDirectory()) {
+      self.message('error', 'Root dir: ' + self.RootDirectory + ' is not a directory');
+      return false;
+    }
+    try {
+      stat = fs.statSync(self.RootDirectory + '/.env');
+      if (!stat.isFile()) {
+        self.message('error', self.RootDirectory + '/.env is not a file');
+        return false;
+      }
+    } catch(e) {
+      // no .env file. All is good.
+    }
+  } catch(e) {
+    self.message('ok', 'Creating ' + self.RootDirectory);
+    fs.ensureDirSync(self.RootDirectory);
+  }
+
+  // Check services directory
+  try {
+    stat = fs.statSync(self.RootDirectory + '/services/');
+    if (!stat.isDirectory()) {
+      self.message('error', self.RootDirectory + '/services/ is not a directory');
+      return false;
+    }
+  } catch(e) {
+    self.message('ok', 'Creating ' + self.RootDirectory + '/services/');
+    fs.ensureDirSync(self.RootDirectory + '/services/');
+  }
+
+  // Check configs directory
+  try {
+    stat = fs.statSync(self.RootDirectory + '/configs/');
+    if (!stat.isDirectory()) {
+      self.message('error', self.RootDirectory + '/configs/ is not a directory');
+      return false;
+    }
+  } catch(e) {
+    self.message('ok', 'Creating ' + self.RootDirectory + '/configs/');
+    fs.ensureDirSync(self.RootDirectory + '/configs/');
+  }
+
+  // Check logs directory
+  try {
+    stat = fs.statSync(self.RootDirectory + '/logs/');
+    if (!stat.isDirectory()) {
+      self.message('error', self.RootDirectory + '/logs/ is not a directory');
+      return false;
+    }
+  } catch(e) {
+    self.message('ok', 'Creating ' + self.RootDirectory + '/logs/');
+    fs.ensureDirSync(self.RootDirectory + '/logs/');
+  }
+
+  // Check pids directory
+  try {
+    stat = fs.statSync(self.RootDirectory + '/pids/');
+    if (!stat.isDirectory()) {
+      self.message('error', self.RootDirectory + '/pids/ is not a directory');
+      return false;
+    }
+  } catch(e) {
+    self.message('ok', 'Creating ' + self.RootDirectory + '/pids/');
+    fs.ensureDirSync(self.RootDirectory + '/pids/');
+  }
+
+  // Check if package.json exists.
+  try {
+    stat = fs.statSync(self.getPackageJSONPath());
+    if (!stat.isFile()) {
+      self.message('error', self.getPackageJSONPath() + ' is not a valid file');
+      return false;
+    }
+
+    self.message('error', self.getPackageJSONPath() + ' exists already.');
+    return false;
+
+  } catch(e) {
+    // no [env.]package.json file. All is good.
+  }
+  return true;
+}
 
 /**
  * Validate Root directory as a project directory..
@@ -698,6 +824,49 @@ MFWCliClass.prototype.isModuleExistsForUninstall = function(err, type, module) {
     self.removeModuleFromPackageJSON(module);
     return self.message('ok', module.short + ' deleted');
   });
+}
+
+/**
+ * perform Enviroment Switch
+ *
+ */
+MFWCliClass.prototype.performEnvSwitch = function() {
+  var self = this;
+
+  let servicesDir = self.RootDirectory + '/services';
+  try{
+    fs.removeSync(self.RootDirectory + '/.services.' + self.currentEnv);
+  }catch(e){
+    console.log(e);
+  }
+  fs.renameSync(servicesDir, self.RootDirectory + '/.services.' + self.currentEnv);
+
+  let newEnvService = self.RootDirectory + '/.services.' + self.envName;
+  try{
+    let stat = fs.statSync(newEnvService);
+    if (!stats.isDirectory()) {
+      return self.message('error', newEnvService + 'is not directory. Something is wrong here.');
+    }
+    fs.renameSync(newEnvService, servicesDir);
+    fs.writeFileSync(self.RootDirectory + '/.env', self.envName);
+    if (self.envName == '') {
+      return self.message('ok', 'switched to: default');
+    }
+    self.message('ok', 'switched to: ' + self.envName);
+  } catch(e) {
+    fs.mkdir(servicesDir, function(err) {
+      if (err) {
+        return self.message('error', err.message);
+      }
+      self.restoreModules();
+      fs.writeFileSync(self.RootDirectory + '/.env', self.envName);
+      if (self.envName == '') {
+        return self.message('ok', 'switched to: default');
+      }
+      self.message('ok', 'switched to: ' + self.envName);
+    });
+    return;
+  }
 }
 
 /**
@@ -1138,23 +1307,46 @@ MFWCliClass.prototype.generatePackageJSON = function() {
   var packageJSONFile = self.getPackageJSONPath();
   fs.stat(packageJSONFile, function(err, stats) {
     if (err) {
-      prompt.start();
+      if (self.envName != '') {
+        let stat;
+        try {
+          stat = fs.statSync(self.RootDirectory + '/package.json');
+          if (stat.isFile()) {
+            try {
+              var defaultPackageJson = JSON.parse(
+                fs.readFileSync(self.RootDirectory + '/package.json')
+              );
+              return fs.writeFile(packageJSONFile,
+                JSON.stringify(defaultPackageJson, null, 2),
+                function(err) {
+                  if (err) {
+                    return self.emit('isPackageJSON', err, packageJSONFile);
+                  }
+                  self.message('ok', packageJSONFile + '  copied from package.json.');
+                  self.emit('isPackageJSON', null, packageJSONFile);
+                });
+            } catch(e) {
+              return self.emit('isPackageJSON', e, packageJSONFile);
+            }
+          }
+        }catch(e) {
+          // no default package. Continue
+        }
+      }
       try {
         var packageSchemaFile = path.resolve(__dirname + '/../templates/package.schema.json');
         var schema = JSON.parse(fs.readFileSync(packageSchemaFile));
       } catch(e) {
-        self.emit('isPackageJSON', e, packageJSONFile);
-        return self.message('error', e.message);
+        return self.emit('isPackageJSON', e, packageJSONFile);
       }
+      prompt.start();
       prompt.get(schema, function(err, result) {
         if (err) {
-          self.emit('isPackageJSON', err, packageJSONFile);
-          return;
+          return self.emit('isPackageJSON', err, packageJSONFile);
         }
         fs.writeFile(packageJSONFile, JSON.stringify(result, null, 2), function(err) {
           if (err) {
-            self.emit('isPackageJSON', err, packageJSONFile);
-            return self.message('error', err.message);
+            return self.emit('isPackageJSON', err, packageJSONFile);
           }
           self.emit('isPackageJSON', null, packageJSONFile);
         });
@@ -1431,6 +1623,23 @@ module.exports.setupDir = function(rootDIR, options) {
   }
 
   MFWCli.setup(rootDIR, envName);
+}
+
+/**
+ * Process init command.
+ */
+module.exports.initProject = function(rootDIR, options) {
+  let MFWCli = new MFWCliClass();
+  if (!rootDIR) {
+    rootDIR = process.cwd();
+  }
+  rootDIR = path.resolve(rootDIR);
+  var envName = options.env;
+  if (!envName) {
+    envName = '';
+  }
+
+  MFWCli.initProject(rootDIR, envName);
 }
 
 /**
