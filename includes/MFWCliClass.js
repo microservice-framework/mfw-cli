@@ -1006,7 +1006,7 @@ MFWCliClass.prototype.checkDirectory = function(subDir) {
     return false;
 
   } catch (e) {
-    try{
+    try {
       fs.ensureDirSync(Directory);
       self.message('ok', 'Creating ' + Directory);
     } catch(e) {
