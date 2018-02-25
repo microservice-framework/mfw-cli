@@ -5,7 +5,6 @@ const util = require('util');
 const fs = require('fs-extra');
 const tmp = require('tmp');
 const exec = require('child_process').exec;
-const spawn = require('child_process').spawn;
 const prompt = require('prompt');
 const colors = require('colors/safe');
 const Table = require('cli-table');
