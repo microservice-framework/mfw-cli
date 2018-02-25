@@ -436,6 +436,37 @@ MFWCliClass.prototype.stopService = function(serviceName, name) {
 }
 
 /**
+ * Fix project directory.
+ */
+MFWCliClass.prototype.fix = function() {
+  var self = this;
+  fs.stat(self.RootDirectory, function(err, stats) {
+    if (err) {
+      return self.message('error', err.message);
+    }
+    if (!stats.isDirectory()) {
+      return self.message('error', self.RootDirectory + ' is not a directory!');
+    }
+
+    self.installGitIgnore();
+    self.generatePackageJSON();
+    var packageJSONFile = self.getPackageJSONPath();
+    try {
+      let stat = fs.statSync(packageJSONFile);
+      if (stats.isFile()) {
+        if(self.checkSkel()) {
+          self.restoreModules();
+        }
+        return;
+      }
+      return self.message('error', packageJSONFile + ' is not a file!');
+    } catch(e) {
+      return self.message('error', e.message);
+    }
+  });
+}
+
+/**
  * Validate service directory as a microservice
  *
  * @return {boolean} true if valid.
@@ -874,69 +905,6 @@ MFWCliClass.prototype.performEnvSwitch = function() {
 }
 
 /**
- * Event callback on isRootExists event.
- *
- * @param {object|null} err - if error happen on checking project directory.
- * @param {boolean} type - true if directory exists.
- */
-MFWCliClass.prototype.isRootExists = function(err, type) {
-  var self = this;
-  if (err) {
-    return self.message('error', err.message);
-  }
-
-  if (type) {
-    self.message('warning', self.RootDirectory + ' already exists.');
-    self.installGitIgnore();
-    self.generatePackageJSON();
-    var packageJSONFile = self.getPackageJSONPath();
-    fs.stat(packageJSONFile, function(err, stats) {
-      if (err) {
-        return;
-      }
-      if (!stats.isDirectory()) {
-        self.restoreModules();
-      }
-    });
-    return self.checkSkel();
-  }
-
-  fs.mkdir(self.RootDirectory, function(err) {
-    if (err) {
-      return self.message('error', err.message);
-    }
-    fs.writeFileSync(self.RootDirectory + '/.env', self.envName);
-    self.installGitIgnore();
-    self.generatePackageJSON();
-    return self.checkSkel();
-  });
-}
-
-/**
- * Event callback on isDirExists event.
- *
- * @param {object|null} err - if error happen on checking directory.
- * @param {boolean} type - true if directory exists.
- * @param {string} dir - path to directory.
- */
-MFWCliClass.prototype.isDirExists = function(err, type, dir) {
-  var self = this;
-  if (err) {
-    return self.message('error', err.message);
-  }
-  if (type) {
-    return self.message('warning', dir + ' already exists.');
-  }
-
-  fs.mkdir(dir, function(err) {
-    if (err) {
-      return self.message('error', err.message);
-    }
-    return self.message('ok', dir + ' created.');
-  });
-}
-
-/**
  * Event callback for install on isModuleDownloaded event.
  *
  * @param {object|null} err - if error happen when downloading module.
@@ -982,31 +950,24 @@ MFWCliClass.prototype.isModuleDownloadedForUpdate = function(err, module) {
 }
 
 /**
- * Check Project root directory. Emits isRootExists.
- */
-MFWCliClass.prototype.checkRootDirectory = function() {
-  var self = this;
-  fs.stat(self.RootDirectory, function(err, stats) {
-    if (err) {
-      return self.emit('isRootExists', null, false);
-    }
-    if (!stats.isDirectory()) {
-      var err = new  Error(self.RootDirectory + ' is not a directory!');
-      return self.emit('isRootExists', err, false);
-    }
-    self.emit('isRootExists', null, true);
-  });
-}
-
-/**
  * Check Project directory skeleton (congis,services, pids, logs directories).
  */
 MFWCliClass.prototype.checkSkel = function() {
   var self = this;
-  self.checkDirectory('services');
-  self.checkDirectory('logs');
-  self.checkDirectory('pids');
-  self.checkDirectory('configs');
+  let status = true;
+  if(!self.checkDirectory('services')){
+    status = false;
+  }
+  if(!self.checkDirectory('logs')){
+    status = false;
+  }
+  if(!self.checkDirectory('pids')){
+    status = false;
+  }
+  if(self.checkDirectory('configs')){
+    status = false;
+  }
+  return status;
 }
 
 /**
@@ -1033,15 +994,18 @@ MFWCliClass.prototype.checkModule = function(module) {
 MFWCliClass.prototype.checkDirectory = function(subDir) {
   var self = this;
   var Directory = self.RootDirectory + '/' + subDir;
-  fs.stat(Directory, function(err, stats) {
-    if (err) {
-      return self.emit('isDirExists', null, false, Directory);
-    }
+  try {
+    let stats = fs.statSync(Directory);
     if (!stats.isDirectory()) {
-      return self.emit('isDirExists', new Error(dir + ' is not a directory!'), false, Directory);
+      self.message('error', Directory + ' is not a directory!');
+      return false;
     }
-    self.emit('isDirExists', null, true, Directory);
-  });
+  } catch (e) {
+    //mkdir here
+    self.message('ok', 'Creating ' + Directory);
+    fs.ensureDirSync(Directory);
+  }
+  return true;
 }
 
 /**
@@ -1693,4 +1657,15 @@ module.exports.envList = function(envName, options) {
     var envs = CommonFunc.findEnvironments(settings.RootDirectory, options.extended);
     console.log(JSON.stringify(envs, null, 2));
   }
+}
+
+/**
+ * Process fix command.
+ */
+module.exports.fix = function(options) {
+  let settings = {
+    RootDirectory: CommonFunc.getRoot(options)
+  };
+  let MFWCli = new MFWCliClass(settings);
+  MFWCli.fix();
 }

@@ -57,6 +57,11 @@ commander.command('stop <service>')
   .option('-r, --root <dir>', 'Optionally root directory')
   .action(MFWCli.stopService);
 
+commander.command('fix')
+  .description('Fix directory structure for project.')
+  .option('-r, --root <dir>', 'Optionally root directory')
+  .action(MFWCli.fix);
+
 commander.command('status [service]')
   .description('Microservice(s) status')
   .option('-r, --root <dir>', 'Optionally root directory')
