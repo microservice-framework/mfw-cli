@@ -20,8 +20,11 @@ prompt.message = '';
 /**
  * Incapsulate logic for mfw-cli commands.
  * @constructor.
+ * @param {object} settings
+ *   - RootDirectory - resolved path to project directory.
+ *   - envName - environment name.
  */
-function MFWCliClass() {
+function MFWCliClass(settings) {
   EventEmitter.call(this);
   var self = this;
   self.messages = {
@@ -31,6 +34,18 @@ function MFWCliClass() {
     unknown: [],
   };
   self.isExiting = false;
+  self.RootDirectory = settings.RootDirectory;
+
+  if(settings.envName) {
+    self.envName = settings.envName;
+  } else {
+    self.envName = self.getEnvName();
+  }
+
+  if (self.envName != '') {
+    self.progressMessage('Env:' + self.envName);
+  }
+
   process.on('beforeExit', function() {
     // prevent multiple printMessages on multiple beforeExit calls.
     if(!self.isExiting) {
@@ -45,16 +60,9 @@ util.inherits(MFWCliClass, EventEmitter);
 /**
  * Prepare project directory and package.json.
  *
- * @param {string} RootDirectory - resolved path to project directory.
- * @param {string} envName - Environment name. Helps to separate production, stage and etc.
  */
-MFWCliClass.prototype.initProject = function(RootDirectory, envName) {
+MFWCliClass.prototype.initProject = function() {
   var self = this;
-  self.RootDirectory = RootDirectory;
-  self.envName = envName;
-  if (self.envName != '') {
-    self.progressMessage('Env:' + self.envName);
-  }
 
   if (!self.validateRootDirForInit()) {
     return self.message('error', 'Init Failed');
@@ -79,24 +87,18 @@ MFWCliClass.prototype.initProject = function(RootDirectory, envName) {
 /**
  * Install service to ROOTDIR/services/SERVICE_NAME directory.
  *
- * @param {string} RootDirectory - resolved path to project directory.
  * @param {string} module - service name. Example: @microservice-framework/microservice-router
  * @param {boolean} isSaveOption - save service to (envname.)package.json file.
  * @param {boolean} isDefaultValues - silent mode. Apply default values.
  */
-MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption, isDefaultValues) {
+MFWCliClass.prototype.install = function(module, isSaveOption, isDefaultValues) {
   var self = this;
-  self.RootDirectory = RootDirectory;
-  self.envName = self.getEnvName();
+
   if (!self.validateRootDir()) {
     return self.message('error', 'Installation Failed');
   }
   self.isSaveOption = isSaveOption;
   self.isDefaultValues = isDefaultValues;
-
-  if (self.envName != '') {
-    self.progressMessage('Env:' + self.envName);
-  }
 
   self.on('isModuleExists', self.isModuleExists);
   self.on('isModuleDownloaded', self.isModuleDownloaded);
@@ -109,22 +111,18 @@ MFWCliClass.prototype.install = function(RootDirectory, module, isSaveOption, is
 /**
  * Update service in ROOTDIR/services/SERVICE_NAME directory.
  *
- * @param {string} RootDirectory - resolved path to project directory.
  * @param {string} module - service name.
  *   Example: @microservice-framework/microservice-router
  *   Example: microservice-router
  */
-MFWCliClass.prototype.update = function(RootDirectory, module, isDefaultValues) {
+MFWCliClass.prototype.update = function(module, isDefaultValues) {
   var self = this;
-  self.RootDirectory = RootDirectory;
-  self.isDefaultValues = isDefaultValues;
-  self.envName = self.getEnvName();
+
   if (!self.validateRootDir()) {
     return self.message('error', 'Installation Failed');
   }
-  if (self.envName != '') {
-    self.progressMessage('Env:' + self.envName);
-  }
+
+  self.isDefaultValues = isDefaultValues;
 
   self.on('isModuleExists', self.isModuleExistsForUpdate);
   self.on('isModuleDownloaded', self.isModuleDownloadedForUpdate);
@@ -136,18 +134,12 @@ MFWCliClass.prototype.update = function(RootDirectory, module, isDefaultValues) 
 
 /**
  * Update all services.
- *
- * @param {string} RootDirectory - resolved path to project directory.
  */
-MFWCliClass.prototype.updateAll = function(RootDirectory) {
+MFWCliClass.prototype.updateAll = function() {
   var self = this;
-  self.RootDirectory = RootDirectory;
-  self.envName = self.getEnvName();
+
   if (!self.validateRootDir()) {
     return self.message('error', 'Installation Failed');
-  }
-  if (self.envName != '') {
-    self.progressMessage('Env:' + self.envName);
   }
   self.restoreModules();
 }
@@ -159,14 +151,9 @@ MFWCliClass.prototype.updateAll = function(RootDirectory) {
  * @param {string} module - service name. Example: @microservice-framework/microservice-router
  * @param {boolean} isSaveOption - remove service from (envname.)package.json file.
  */
-MFWCliClass.prototype.uninstall = function(RootDirectory, module, isSaveOption) {
+MFWCliClass.prototype.uninstall = function(module, isSaveOption) {
   var self = this;
-  self.RootDirectory = RootDirectory;
   self.isSaveOption = isSaveOption;
-  self.envName = self.getEnvName();
-  if (self.envName != '') {
-    self.progressMessage('Env:' + self.envName);
-  }
 
   self.on('isModuleExists', self.isModuleExistsForUninstall);
 
@@ -178,16 +165,13 @@ MFWCliClass.prototype.uninstall = function(RootDirectory, module, isSaveOption) 
 /**
  * Switch environment and init if new one.
  *
- * @param {string} RootDirectory - resolved path to project directory.
  * @param {string} envName - environment name.
  */
-MFWCliClass.prototype.envSet = function(RootDirectory, envName) {
+MFWCliClass.prototype.envSet = function(envName) {
   var self = this;
-  self.RootDirectory = RootDirectory;
+  self.currentEnv = self.getEnvName();
   self.envName = envName;
   self.isDefaultValues = true;
-
-  self.currentEnv = self.getEnvName();
 
   if (self.currentEnv == self.envName) {
     if (self.envName == '') {
@@ -210,54 +194,55 @@ MFWCliClass.prototype.envSet = function(RootDirectory, envName) {
 }
 
 /**
- * Start service(s).
+ * Start all services.
  *
- * @param {string} RootDirectory - resolved path to project directory.
- * @param {string} serviceName - service name.
  * @param {boolean} isDevelMode - do not detach services from terminal and output log to stdout.
  */
-MFWCliClass.prototype.start = function(RootDirectory, serviceName, isDevelMode) {
+MFWCliClass.prototype.startAll = function(isDevelMode) {
   var self = this;
-  self.RootDirectory = RootDirectory;
-  self.envName = self.getEnvName();
   self.devel = isDevelMode;
 
   var servicesDir = self.RootDirectory + '/services/';
+  var files = fs.readdirSync(servicesDir);
 
-  if (self.envName != '') {
-    self.progressMessage('Env:' + self.envName);
-  }
-
-  if (serviceName == 'all') {
-    var files = fs.readdirSync(servicesDir);
-    for (var i in files) {
-      var filename = files[i];
-      var stat = fs.statSync(servicesDir + filename);
-      if (stat.isDirectory()) {
-        var status = statusCheck(RootDirectory, filename);
-        status.on('status', function(service, status) {
-          self.message('error', status.name + ' already running.');
-        });
-        status.on('error', function(error, service, status) {
-          if (status) {
-            return self.startService(service, status.start);
-          }
-          self.startService(service);
-        });
-      }
+  for (var i in files) {
+    var filename = files[i];
+    var stat = fs.statSync(servicesDir + filename);
+    if (stat.isDirectory()) {
+      var status = statusCheck(self.RootDirectory, filename);
+      status.on('status', function(service, status) {
+        self.message('error', status.name + ' already running.');
+      });
+      status.on('error', function(error, service, status) {
+        if (status) {
+          return self.startService(service, status.start);
+        }
+        self.startService(service);
+      });
     }
-  } else {
-    var status = statusCheck(RootDirectory, serviceName);
-    status.on('status', function(service, status) {
-      self.message('error', status.name + ' already running.');
-    });
-    status.on('error', function(error, service, status) {
-      if (status) {
-        return self.startService(service, status.start);
-      }
-      self.startService(service);
-    });
   }
+}
+
+/**
+ * Start service.
+ *
+ * @param {string} serviceName - service name.
+ * @param {boolean} isDevelMode - do not detach services from terminal and output log to stdout.
+ */
+MFWCliClass.prototype.start = function(serviceName, isDevelMode) {
+  var self = this;
+  self.devel = isDevelMode;
+
+  var status = statusCheck(self.RootDirectory, serviceName);
+  status.on('status', function(service, status) {
+    self.message('error', status.name + ' already running.');
+  });
+  status.on('error', function(error, service, status) {
+    if (status) {
+      return self.startService(service, status.start);
+    }
+    self.startService(service);
+  });
 }
 
 /**
@@ -297,6 +282,7 @@ MFWCliClass.prototype.startByJSON = function(serviceName) {
     self.startService(serviceName, name);
   }
 }
+
 /**
  * Start service by name.
  *
@@ -348,61 +334,57 @@ MFWCliClass.prototype.startService = function(serviceName, name) {
 }
 
 /**
- * Stop service(s).
- *
- * @param {string} RootDirectory - resolved path to project directory.
- * @param {string} serviceName - service name.
+ * Stop all services.
  */
-MFWCliClass.prototype.stop = function(RootDirectory, serviceName) {
+MFWCliClass.prototype.stopAll = function() {
   var self = this;
-  self.RootDirectory = RootDirectory;
-  self.envName = self.getEnvName();
-
   var servicesDir = self.RootDirectory + '/services/';
 
-  if (self.envName != '') {
-    self.progressMessage('Env:' + self.envName);
-  }
-
-  if (serviceName == 'all') {
-    var files = fs.readdirSync(servicesDir);
-    for (var i in files) {
-      var filename = files[i];
-      var stat = fs.statSync(servicesDir + filename);
-      if (stat.isDirectory()) {
-        var status = statusCheck(RootDirectory, filename);
-        status.on('status', function(service, status) {
-          if (status) {
-            return self.stopService(service, status.stop);
-          }
-          self.stopService(service);
-        });
-        status.on('error', function(error, service, status) {
-          if (status) {
-            return self.message('error', status.name + ' ' + error);
-          }
-        });
-      }
+  var files = fs.readdirSync(servicesDir);
+  for (var i in files) {
+    var filename = files[i];
+    var stat = fs.statSync(servicesDir + filename);
+    if (stat.isDirectory()) {
+      var status = statusCheck(self.RootDirectory, filename);
+      status.on('status', function(service, status) {
+        if (status) {
+          return self.stopService(service, status.stop);
+        }
+        self.stopService(service);
+      });
+      status.on('error', function(error, service, status) {
+        if (status) {
+          return self.message('error', status.name + ' ' + error);
+        }
+      });
     }
-  } else {
-    var status = statusCheck(RootDirectory, serviceName);
-    status.on('status', function(service, status) {
-      if (status) {
-        return self.stopService(service, status.stop);
-      }
-      self.stopService(service);
-    });
-    status.on('error', function(error, service, status) {
-      if (status) {
-        return self.message('error', status.name + ' ' + error);
-      }
-      self.message('error', service + ' ' + error);
-    });
   }
 }
 
 /**
- * Start service by name.
+ * Stop service.
+ *
+ * @param {string} serviceName - service name.
+ */
+MFWCliClass.prototype.stop = function(serviceName) {
+  var self = this;
+  var status = statusCheck(self.RootDirectory, serviceName);
+  status.on('status', function(service, status) {
+    if (status) {
+      return self.stopService(service, status.stop);
+    }
+    self.stopService(service);
+  });
+  status.on('error', function(error, service, status) {
+    if (status) {
+      return self.message('error', status.name + ' ' + error);
+    }
+    self.message('error', service + ' ' + error);
+  });
+}
+
+/**
+ * Stop service by name.
  *
  * @param {string} serviceName - service name.
  */
@@ -452,12 +434,13 @@ MFWCliClass.prototype.stopService = function(serviceName, name) {
   self.progressMessage('stopping ' + serviceName + ':' + name);
   var child = spawn('npm', ['run', name, '-s' ], {cwd: serviceDir, stdio: 'inherit'});
 }
+
 /**
  * Validate service directory as a microservice
  *
  * @return {boolean} true if valid.
  */
-MFWCliClass.prototype.verifyServiceDir = function(directory) {
+MFWCliClass.prototype.validateServiceDir = function(directory) {
   var self = this;
   let resultStatus = true;
   let stat;
@@ -529,6 +512,7 @@ MFWCliClass.prototype.verifyServiceDir = function(directory) {
   }
   return resultStatus;
 }
+
 /**
  * Validate Root directory as a project directory..
  *
@@ -723,7 +707,7 @@ MFWCliClass.prototype.validateRootDir = function() {
 /**
  * Prepare module object.
  *
- * @param {string} RootDirectory - resolved path to project directory.
+ * @param {string} module - service name.
  * @param {function} callback - callback when module prepared.
  */
 MFWCliClass.prototype.prepareModule = function(module, callback) {
@@ -848,7 +832,6 @@ MFWCliClass.prototype.isModuleExistsForUninstall = function(err, type, module) {
 
 /**
  * perform Enviroment Switch
- *
  */
 MFWCliClass.prototype.performEnvSwitch = function() {
   var self = this;
@@ -1081,7 +1064,7 @@ MFWCliClass.prototype.downloadPackage = function(module) {
       if (err) {
         return self.emit('isModuleDownloaded', err, module);
       }
-      if (!self.verifyServiceDir(module.tmpDir.name + '/package/')) {
+      if (!self.validateServiceDir(module.tmpDir.name + '/package/')) {
         fs.emptyDirSync(module.tmpDir.name);
         module.tmpDir.removeCallback();
         let err = new Error(module.short + ' is not valid microservice package');
@@ -1580,107 +1563,134 @@ MFWCliClass.prototype.printMessages = function() {
  * Process init command.
  */
 module.exports.initProject = function(rootDIR, options) {
-  let MFWCli = new MFWCliClass();
+  let settings = {};
   if (!rootDIR) {
     rootDIR = process.cwd();
   }
-  rootDIR = path.resolve(rootDIR);
-  var envName = options.env;
-  if (!envName) {
-    envName = '';
+  settings.RootDirectory = path.resolve(rootDIR);
+  settings.envName = options.env;
+  if (!settings.envName) {
+    settings.envName = '';
   }
-
-  MFWCli.initProject(rootDIR, envName);
+  let MFWCli = new MFWCliClass(settings);
+  MFWCli.initProject();
 }
 
 /**
  * Process install command.
  */
 module.exports.installService = function(service, options) {
-  let MFWCli = new MFWCliClass();
-  let rootDIR = CommonFunc.getRoot(options);
+
+  let settings = {
+    RootDirectory: CommonFunc.getRoot(options)
+  };
+  let MFWCli = new MFWCliClass(settings);
+
   if (!service) {
     service = 'all';
   }
 
   if (service == 'all') {
-    return MFWCli.updateAll(rootDIR);
+    return MFWCli.updateAll();
   }
 
   let possibleLocalPath = path.resolve(service);
   try {
     let stat = fs.statSync(possibleLocalPath);
-    if (possibleLocalPath == rootDIR) {
+    if (possibleLocalPath == settings.RootDirectory) {
       Message.error('You could not install service into itself :)');
       return;
     }
   } catch(e) {}
-
-  MFWCli.install(rootDIR, service, options.save, options.default);
+  MFWCli.install(service, options.save, options.default);
 }
 
 /**
  * Process update command.
  */
 module.exports.updateService = function(service, options) {
-  let MFWCli = new MFWCliClass();
-  let rootDIR = CommonFunc.getRoot(options);
+  let settings = {
+    RootDirectory: CommonFunc.getRoot(options)
+  };
+  let MFWCli = new MFWCliClass(settings);
+
   if (!service) {
     service = 'all';
   }
+
   if (service == 'all') {
-    return MFWCli.updateAll(rootDIR);
+    return MFWCli.updateAll();
   }
-  return MFWCli.update(rootDIR, service, options.default);
+  return MFWCli.update(service, options.default);
 }
 
 /**
  * Process uninstall command.
  */
 module.exports.uninstallService = function(service, options) {
-  let MFWCli = new MFWCliClass();
-  let rootDIR = CommonFunc.getRoot(options);
-  MFWCli.uninstall(rootDIR, service, options.save);
+  let settings = {
+    RootDirectory: CommonFunc.getRoot(options)
+  };
+
+  let MFWCli = new MFWCliClass(settings);
+  MFWCli.uninstall(service, options.save);
 }
 
 /**
  * Process start command.
  */
 module.exports.startService = function(service, options) {
-  let MFWCli = new MFWCliClass();
-  let rootDIR = CommonFunc.getRoot(options);
+  let settings = {
+    RootDirectory: CommonFunc.getRoot(options)
+  };
+  let MFWCli = new MFWCliClass(settings);
+
   if (!service) {
     service = 'all';
   }
-  MFWCli.start(rootDIR, service, options.devel);
+
+  if (service == 'all') {
+    return MFWCli.startAll(options.devel);
+  }
+  MFWCli.start(service, options.devel);
 }
 
 /**
  * Process stop command.
  */
 module.exports.stopService = function(service, options) {
-  let MFWCli = new MFWCliClass();
-  let rootDIR = CommonFunc.getRoot(options);
+  let settings = {
+    RootDirectory: CommonFunc.getRoot(options)
+  };
+  let MFWCli = new MFWCliClass(settings);
+
   if (!service) {
     service = 'all';
   }
-  MFWCli.stop(rootDIR, service);
+
+  if (service == 'all') {
+    return MFWCli.stopAll();
+  }
+  MFWCli.stop(service);
 }
 
 /**
  * Process env command.
  */
 module.exports.envList = function(envName, options) {
-  let MFWCli = new MFWCliClass();
-  let rootDIR = CommonFunc.getRoot(options);
+  let settings = {
+    RootDirectory: CommonFunc.getRoot(options)
+  };
+  let MFWCli = new MFWCliClass(settings);
+
   if (envName) {
     if (envName == 'default') {
       envName = '';
     }
-    return MFWCli.envSet(rootDIR, envName);
+    return MFWCli.envSet(envName);
   }
   if (options.list) {
-    var envs = CommonFunc.findEnvironments(rootDIR, options.extended);
-    console.log(envs);
+    var envs = CommonFunc.findEnvironments(settings.RootDirectory, options.extended);
+    console.log(JSON.stringify(envs, null, 2));
   }
 }
