@@ -454,7 +454,7 @@ MFWCliClass.prototype.fix = function() {
     try {
       let stat = fs.statSync(packageJSONFile);
       if (stats.isFile()) {
-        if(self.checkSkel()) {
+        if (self.checkSkel()) {
           self.restoreModules();
         }
         return;
@@ -955,16 +955,16 @@ MFWCliClass.prototype.isModuleDownloadedForUpdate = function(err, module) {
 MFWCliClass.prototype.checkSkel = function() {
   var self = this;
   let status = true;
-  if(!self.checkDirectory('services')){
+  if (!self.checkDirectory('services')) {
     status = false;
   }
-  if(!self.checkDirectory('logs')){
+  if (!self.checkDirectory('logs')) {
     status = false;
   }
-  if(!self.checkDirectory('pids')){
+  if (!self.checkDirectory('pids')) {
     status = false;
   }
-  if(self.checkDirectory('configs')){
+  if (self.checkDirectory('configs')) {
     status = false;
   }
   return status;
@@ -1001,9 +1001,13 @@ MFWCliClass.prototype.checkDirectory = function(subDir) {
       return false;
     }
   } catch (e) {
-    //mkdir here
-    self.message('ok', 'Creating ' + Directory);
-    fs.ensureDirSync(Directory);
+    try{
+      fs.ensureDirSync(Directory);
+      self.message('ok', 'Creating ' + Directory);
+    } catch(e) {
+      self.message('error', e.message);
+      return false;
+    }
   }
   return true;
 }
