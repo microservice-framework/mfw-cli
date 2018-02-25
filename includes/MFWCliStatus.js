@@ -20,15 +20,19 @@ prompt.message = '';
  * Incapsulate logic for mfw-cli commands.
  * @constructor.
  */
-function MFWCliStatusClass() {
+function MFWCliStatusClass(settings) {
   EventEmitter.call(this);
   var self = this;
   self.messages = {
     ok: [],
     error: [],
     warning: [],
-    status: []
+    status: [],
+    unknown: [],
   };
+  self.isExiting = false;
+  self.RootDirectory = settings.RootDirectory;
+  self.envName = self.getEnvName();
 }
 
 util.inherits(MFWCliStatusClass, EventEmitter);
@@ -39,11 +43,10 @@ util.inherits(MFWCliStatusClass, EventEmitter);
  * @param {string} RootDirectory - resolved path to project directory.
  * @param {string} module - service name. Example: microservice-router
  */
-MFWCliStatusClass.prototype.check = function(RootDirectory, module) {
+MFWCliStatusClass.prototype.check = function( module) {
   var self = this;
   self.module = module;
-  self.RootDirectory = RootDirectory;
-  self.envName = self.getEnvName();
+
   self.on('isRootExists', self.isRootExists);
   self.on('isModuleExists', function(err, type, module) {
     if (err) {
@@ -62,17 +65,17 @@ MFWCliStatusClass.prototype.check = function(RootDirectory, module) {
  * @param {string} RootDirectory - resolved path to project directory.
  * @param {string} module - service name. Example: microservice-router
  */
-MFWCliStatusClass.prototype.process = function(RootDirectory, module) {
+MFWCliStatusClass.prototype.process = function(module) {
   var self = this;
   process.on('beforeExit', function() {
-    self.printMessages();
+    // prevent multiple printMessages on multiple beforeExit calls.
+    if (!self.isExiting) {
+      self.isExiting = true;
+      self.printMessages();
+    }
   });
   self.module = module;
-  self.RootDirectory = RootDirectory;
-  self.envName = self.getEnvName();
-  if (self.envName != '') {
-    self.progressMessage('Env:' + self.envName);
-  }
+
   self.on('isRootExists', self.isRootExists);
   self.on('isModuleExists', function(err, type, module) {
     if (err) {
@@ -375,10 +378,9 @@ MFWCliStatusClass.prototype.getEnvName = function() {
   var currentEnv;
   try {
     currentEnv = fs.readFileSync(self.RootDirectory + '/.env');
+    currentEnv = currentEnv.trim();
   } catch(e) {
     currentEnv = '';
-    self.message('warning', 'failed to read .env file. Creating default one.');
-    fs.writeFileSync(self.RootDirectory + '/.env', currentEnv);
   }
   return currentEnv;
 }
@@ -422,6 +424,9 @@ MFWCliStatusClass.prototype.getPackageJSON = function() {
  */
 MFWCliStatusClass.prototype.message = function(type, message) {
   var self = this;
+  if (!self.messages[type]) {
+    type = 'unknown';
+  }
   self.messages[type].push(message);
 }
 
@@ -432,61 +437,47 @@ MFWCliStatusClass.prototype.progressMessage = function(message) {
   console.log(colors.gray('\t-\t' + message));
 }
 
-
-
 /**
  * Print Messages. Executed process.on('exit').
  */
 MFWCliStatusClass.prototype.printMessages = function() {
   var self = this;
   var rows = [];
+
   for (var type in self.messages) {
     if (self.messages[type].length > 0) {
-      for (var i in self.messages[type]) {
-        var message = self.messages[type][i];
-        switch (type){
-          case 'error': {
-            Message.error(message);
-            break;
+      for (let message of self.messages[type]) {
+        if(type == 'status'){
+          var version = 'und';
+          if (message.package && message.package.version) {
+            version =  message.package.version;
           }
-          case 'warning': {
-            Message.warning(message);
-            break;
-          }
-          case 'ok': {
-            Message.ok(message);
-            break;
-          }
-          case 'status': {
-            var version = 'und';
-            if (message.package && message.package.version) {
-              version =  message.package.version;
-            }
-            if (message.error) {
-              rows.push([
-                colors.red(message.name),
-                colors.gray(version),
-                colors.gray(message.pid),
-                '',
-                '',
-                message.error
-              ]);
-              break;
-            }
+          if (message.error) {
             rows.push([
-              colors.green(message.name),
+              colors.red(message.name),
               colors.gray(version),
               colors.gray(message.pid),
-              message.cpu,
-              message.mem,
-              ''
+              '',
+              '',
+              message.error
             ]);
-            break;
+            continue;
           }
+          rows.push([
+            colors.green(message.name),
+            colors.gray(version),
+            colors.gray(message.pid),
+            message.cpu,
+            message.mem,
+            ''
+          ]);
+          continue;
         }
+        Message[type](message);
       }
     }
   }
+
 
   var table = new Table({ head: ['SERVICE ', 'VERSION ', 'PID ', 'CPU  ', 'MEM  ', 'Comment'] ,
     chars: { top: '' , 'top-mid': '' , 'top-left': ' ' , 'top-right': ''
@@ -534,13 +525,20 @@ MFWCliStatusClass.prototype.printMessages = function() {
  * Process search command.
  */
 module.exports.Status = function(service, options) {
-  var rootDIR = CommonFunc.getRoot(options);
-  var status = new MFWCliStatusClass();
-  status.process(rootDIR, service);
+
+  let settings = {
+    RootDirectory: CommonFunc.getRoot(options)
+  };
+
+  var status = new MFWCliStatusClass(settings);
+  status.process(service);
 }
 
 module.exports.StatusCheck = function(rootDir, service) {
-  var status = new MFWCliStatusClass();
-  status.check(rootDir, service);
+  let settings = {
+    RootDirectory: rootDir
+  };
+  let status = new MFWCliStatusClass(settings);
+  status.check(service);
   return status;
 }
