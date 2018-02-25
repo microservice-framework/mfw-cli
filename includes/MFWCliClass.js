@@ -36,7 +36,7 @@ function MFWCliClass(settings) {
   self.isExiting = false;
   self.RootDirectory = settings.RootDirectory;
 
-  if(settings.envName) {
+  if (settings.envName) {
     self.envName = settings.envName;
   } else {
     self.envName = self.getEnvName();
@@ -48,7 +48,7 @@ function MFWCliClass(settings) {
 
   process.on('beforeExit', function() {
     // prevent multiple printMessages on multiple beforeExit calls.
-    if(!self.isExiting) {
+    if (!self.isExiting) {
       self.isExiting = true;
       self.printMessages();
     }
@@ -1532,7 +1532,7 @@ MFWCliClass.prototype.installGitIgnore = function() {
  */
 MFWCliClass.prototype.message = function(type, message) {
   var self = this;
-  if(!self.messages[type]) {
+  if (!self.messages[type]) {
     type = 'unknown';
   }
   self.messages[type].push(message);
