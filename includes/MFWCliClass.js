@@ -453,10 +453,13 @@ MFWCliClass.prototype.fix = function() {
     var packageJSONFile = self.getPackageJSONPath();
     try {
       let stat = fs.statSync(packageJSONFile);
-      if (stats.isFile()) {
+      if (stat.isFile()) {
         if (self.checkSkel()) {
+          self.message('ok', 'Directory structure checked.');
           self.restoreModules();
+          return;
         }
+        self.message('error', 'Directory structure failed.');
         return;
       }
       return self.message('error', packageJSONFile + ' is not a file!');
@@ -964,7 +967,7 @@ MFWCliClass.prototype.checkSkel = function() {
   if (!self.checkDirectory('pids')) {
     status = false;
   }
-  if (self.checkDirectory('configs')) {
+  if (!self.checkDirectory('configs')) {
     status = false;
   }
   return status;
@@ -996,15 +999,18 @@ MFWCliClass.prototype.checkDirectory = function(subDir) {
   var Directory = self.RootDirectory + '/' + subDir;
   try {
     let stats = fs.statSync(Directory);
-    if (!stats.isDirectory()) {
-      self.message('error', Directory + ' is not a directory!');
-      return false;
+    if (stats.isDirectory()) {
+      return true;
     }
+    self.message('error', Directory + ' is not a directory!');
+    return false;
+
   } catch (e) {
     try{
       fs.ensureDirSync(Directory);
       self.message('ok', 'Creating ' + Directory);
     } catch(e) {
+      console.log(e);
       self.message('error', e.message);
       return false;
     }
