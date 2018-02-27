@@ -134,6 +134,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
    */
   validateRootDirForInit() {
     let stat;
+    // Check ROOT DIR.
     try {
       stat = fs.statSync(this.RootDirectory);
       if (!stat.isDirectory()) {
@@ -217,6 +218,96 @@ class MFWCommandPrototypeClass extends EventEmitter {
       // no [env.]package.json file. All is good.
     }
     return true;
+  }
+
+  /**
+   * Validate Root directory as a project directory..
+   *
+   * @return {boolean} true if valid.
+   */
+  validateRootDir() {
+    let stat;
+    // Check ROOT DIR.
+    let resultStatus = true;
+    try {
+      stat = fs.statSync(this.RootDirectory);
+      if (!stat.isDirectory()) {
+        this.message('error', 'Root dir: ' + this.RootDirectory + ' is not a directory');
+        resultStatus = false;
+      }
+    } catch(e) {
+      this.message('error', 'Root dir: ' + this.RootDirectory + ' does not exist');
+      resultStatus = false;
+    }
+
+    // Check services directory
+    try {
+      stat = fs.statSync(this.RootDirectory + '/services/');
+      if (!stat.isDirectory()) {
+        this.message('error', 'Root dir: ' + this.RootDirectory + '/services/ is not a directory');
+        resultStatus = false;
+      }
+    } catch(e) {
+      this.message('error', 'Root dir: ' + this.RootDirectory + '/services/ does not exist');
+      resultStatus = false;
+    }
+
+    // Check configs directory
+    try {
+      stat = fs.statSync(this.RootDirectory + '/configs/');
+      if (!stat.isDirectory()) {
+        this.message('error', 'Root dir: ' + this.RootDirectory + '/configs/ is not a directory');
+        resultStatus = false;
+      }
+    } catch(e) {
+      this.message('error', 'Root dir: ' + this.RootDirectory + '/configs/ does not exist');
+      resultStatus = false;
+    }
+
+    // Check logs directory
+    try {
+      stat = fs.statSync(this.RootDirectory + '/logs/');
+      if (!stat.isDirectory()) {
+        this.message('error', 'Root dir: ' + this.RootDirectory + '/logs/ is not a directory');
+        resultStatus = false;
+      }
+    } catch(e) {
+      this.message('error', 'Root dir: ' + this.RootDirectory + '/logs/ does not exist');
+      resultStatus = false;
+    }
+
+    // Check pids directory
+    try {
+      stat = fs.statSync(this.RootDirectory + '/pids/');
+      if (!stat.isDirectory()) {
+        this.message('error', 'Root dir: ' + this.RootDirectory + '/pids/ is not a directory');
+        resultStatus = false;
+      }
+    } catch(e) {
+      this.message('error', 'Root dir: ' + this.RootDirectory + '/pids/ does not exist');
+      resultStatus = false;
+    }
+
+    // Check if package.json exists.
+    try {
+      stat = fs.statSync(this.getPackageJSONPath());
+      if (!stat.isFile()) {
+        this.message('error', this.getPackageJSONPath() + ' is not a valid file');
+        resultStatus = false;
+      } else {
+        // Check if package.json is valid file.
+        try {
+          JSON.parse(fs.readFileSync(this.getPackageJSONPath()));
+        } catch (e) {
+          this.message('error', e + ' in file: ' + this.getPackageJSONPath());
+          resultStatus = false;
+        }
+      }
+    } catch(e) {
+      this.message('error', self.getPackageJSONPath() + ' does not exist');
+      resultStatus = false;
+    }
+    return resultStatus;
   }
 }
 

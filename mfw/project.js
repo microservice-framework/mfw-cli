@@ -300,6 +300,24 @@ class ProjectClass extends MFWCommandPrototypeClass {
   }
 
   /**
+   * Event callback for install on isModuleDownloaded event.
+   *
+   * @param {object|null} err - if error happen when downloading module.
+   * @param {object} module - module data.
+   */
+  isModuleDownloadedForInstall (module) {
+    this.progressMessage('installing dependencies for ' + module.short);
+    return exec('npm install', {cwd: module.installDir}, (error, stdout, stderr) => {
+      if (error) {
+        this.message('error', module.full
+          + ' installed, but `npm install` failed:' + error.message);
+      }
+      this.checkModuleConfigured(module);
+      return this.message('ok', module.full + ' installed.');
+    });
+  }
+
+  /**
    * Validate service directory as a microservice
    *
    * @return {boolean} true if valid.
@@ -374,6 +392,25 @@ class ProjectClass extends MFWCommandPrototypeClass {
       resultStatus = false;
     }
     return resultStatus;
+  }
+
+  /**
+   * Check if Module configured.
+   *
+   * @param {object} module - module data.
+   */
+  checkModuleConfigured(module) {
+    fs.stat(module.envFile, (err, stats) => {
+      if (err) {
+        return this.configureModule(module);
+      }
+      this.addModuleToPackageJSON(module);
+      fs.stat(module.installDir + '/.env', (err, stats) => {
+        if (err) {
+          return fs.ensureSymlinkSync(module.envFile, module.installDir + '/.env');
+        }
+      });
+    });
   }
 
   /**
@@ -595,6 +632,45 @@ class ProjectClass extends MFWCommandPrototypeClass {
       }
     });
   }
+
+  /**
+   * Install service to ROOTDIR/services/SERVICE_NAME directory.
+   *
+   * @param {string} module - service name. Example: @microservice-framework/microservice-router
+   * @param {boolean} isSaveOption - save service to (envname.)package.json file.
+   * @param {boolean} isDefaultValues - silent mode. Apply default values.
+   */
+  installModule (moduleName, isSaveOption, isDefaultValues) {
+    if (!this.validateRootDir()) {
+      return this.message('error', 'Installation Failed');
+    }
+    this.isSaveOption = isSaveOption;
+    this.isDefaultValues = isDefaultValues;
+
+    this.on('downloadModule', (module) => {
+      module.tmpDir = tmp.dirSync();
+      this.downloadPackage(module);
+    });
+    this.on('moduleDownloaded', (module) => {
+      this.isModuleDownloadedForInstall(module);
+    });
+
+    this.prepareModule(moduleName, (module) => {
+      this.checkModule(module);
+    });
+  }
+
+  /**
+   * Update all services.
+   */
+  updateAll () {
+    var self = this;
+
+    if (!this.validateRootDir()) {
+      return self.message('error', 'Installation Failed');
+    }
+    this.restoreModules();
+  }
 }
 
 /**
@@ -638,29 +714,7 @@ function MFWCliClass(settings) {
 util.inherits(MFWCliClass, EventEmitter);
 
 
-/**
- * Install service to ROOTDIR/services/SERVICE_NAME directory.
- *
- * @param {string} module - service name. Example: @microservice-framework/microservice-router
- * @param {boolean} isSaveOption - save service to (envname.)package.json file.
- * @param {boolean} isDefaultValues - silent mode. Apply default values.
- */
-MFWCliClass.prototype.install = function(module, isSaveOption, isDefaultValues) {
-  var self = this;
 
-  if (!self.validateRootDir()) {
-    return self.message('error', 'Installation Failed');
-  }
-  self.isSaveOption = isSaveOption;
-  self.isDefaultValues = isDefaultValues;
-
-  self.on('isModuleExists', self.isModuleExists);
-  self.on('isModuleDownloaded', self.isModuleDownloaded);
-
-  self.prepareModule(module, function(module) {
-    self.checkModule(module);
-  });
-}
 
 /**
  * Update service in ROOTDIR/services/SERVICE_NAME directory.
@@ -1027,7 +1081,7 @@ MFWCliClass.prototype.fix = function() {
  * Validate Root directory as a project directory..
  *
  * @return {boolean} true if valid.
- */
+
 MFWCliClass.prototype.validateRootDir = function() {
   var self = this;
   var stat;
@@ -1120,7 +1174,7 @@ MFWCliClass.prototype.validateRootDir = function() {
 
   return resultStatus;
 }
-
+ */
 /**
  * Event callback for update on isModuleExists event.
  *
@@ -1349,7 +1403,7 @@ MFWCliClass.prototype.installGitIgnore = function() {
  */
 module.exports.ProjectClass = ProjectClass;
 module.exports.commander = function(commander) {
-  commander.command('init2 [dir]')
+  commander.command('init [dir]')
     .description('Init directory as a project.')
     .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
     .action(function(rootDIR, options) {
@@ -1369,55 +1423,36 @@ module.exports.commander = function(commander) {
       let MFWCli = new ProjectClass(settings);
       MFWCli.initProject();
     });
+
+  commander.command('install [service]')
+    .description('Install microservice.'
+      + 'Use nothing or "all" to install all services saved in package.json.')
+    .option('-r, --root <dir>', 'Optionaly root directory')
+    .option('-s, --save', 'Save microservice information')
+    .option('-d, --default', 'Set default values')
+    .action(function(service, options) {
+      let settings = {
+        RootDirectory: CommonFunc.getRoot(options)
+      };
+      let MFWCli = new ProjectClass(settings);
+
+      if (!service) {
+        service = 'all';
+      }
+      if (service == 'all') {
+        return MFWCli.updateAll();
+      }
+      let possibleLocalPath = path.resolve(service);
+      try {
+        let stat = fs.statSync(possibleLocalPath);
+        if (possibleLocalPath == settings.RootDirectory) {
+          MFWCli.error('You could not install service into itself :)');
+          return;
+        }
+      } catch(e) {}
+      MFWCli.installModule(service, options.save, options.default);
+    });
 }
-
-/**
- * Process init command.
-
-module.exports.initProject = function(rootDIR, options) {
-  let settings = {};
-  if (!rootDIR) {
-    rootDIR = process.cwd();
-  }
-  settings.RootDirectory = path.resolve(rootDIR);
-  settings.envName = options.env;
-  if (!settings.envName) {
-    settings.envName = '';
-  }
-  let MFWCli = new MFWCliClass(settings);
-  MFWCli.initProject();
-}
- */
-
-/**
- * Process install command.
-
-module.exports.installService = function(service, options) {
-
-  let settings = {
-    RootDirectory: CommonFunc.getRoot(options)
-  };
-  let MFWCli = new MFWCliClass(settings);
-
-  if (!service) {
-    service = 'all';
-  }
-
-  if (service == 'all') {
-    return MFWCli.updateAll();
-  }
-
-  let possibleLocalPath = path.resolve(service);
-  try {
-    let stat = fs.statSync(possibleLocalPath);
-    if (possibleLocalPath == settings.RootDirectory) {
-      Message.error('You could not install service into itself :)');
-      return;
-    }
-  } catch(e) {}
-  MFWCli.install(service, options.save, options.default);
-}
- */
 
 /**
  * Process update command.
