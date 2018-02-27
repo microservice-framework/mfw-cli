@@ -761,6 +761,42 @@ class ProjectClass extends MFWCommandPrototypeClass {
       });
     });
   }
+
+  /**
+   * Switch environment and init if new one.
+   *
+   * @param {string} envName - environment name.
+   */
+  envSet(envName) {
+    var self = this;
+    this.envName = envName;
+    this.isDefaultValues = true;
+
+    if (this.currentEnv == this.envName) {
+      if (this.envName == '') {
+        return this.message('error', 'Already in: default');
+      }
+      return this.message('error', 'Already in: ' + self.envName);
+    }
+    this.on('isPackageJSON', (err, packageJSONPath) => {
+      if (err) {
+        return this.message('error', e.message);
+      }
+      this.currentEnv = this.getEnvName();
+      if (this.currentEnv !== this.envName) {
+        this.isDefaultValues = true;
+        this.performEnvSwitch();
+      }
+    });
+
+    let packageJSONFile = this.getPackageJSONPath();
+    fs.stat(packageJSONFile, (err, stats) => {
+      if (err) {
+        return this.generatePackageJSON();
+      }
+      this.emit('isPackageJSON', null, packageJSONFile);
+    });
+  }
 }
 
 /**
@@ -806,36 +842,7 @@ util.inherits(MFWCliClass, EventEmitter);
 
 
 
-/**
- * Switch environment and init if new one.
- *
- * @param {string} envName - environment name.
- */
-MFWCliClass.prototype.envSet = function(envName) {
-  var self = this;
-  self.currentEnv = self.getEnvName();
-  self.envName = envName;
-  self.isDefaultValues = true;
 
-  if (self.currentEnv == self.envName) {
-    if (self.envName == '') {
-      return self.message('error', 'Already in: default');
-    }
-    return self.message('error', 'Already in: ' + self.envName);
-  }
-  self.on('isPackageJSON', function(err, packageJSONPath) {
-    if (err) {
-      return self.message('error', e.message);
-    }
-    self.currentEnv = self.getEnvName();
-    if (self.currentEnv !== self.envName) {
-      self.isDefaultValues = true;
-      self.performEnvSwitch();
-    }
-  });
-  self.checkPackageJSON();
-
-}
 
 /**
  * Start all services.
@@ -1519,6 +1526,29 @@ module.exports.commander = function(commander) {
       };
       let MFWCli = new ProjectClass(settings);
       MFWCli.uninstallService(service, options.save);
+    });
+
+  commander.command('env [env]')
+    .description('setup env directory')
+    .option('-l, --list', 'List enabled Environments.')
+    .option('-e, --extended', 'Print extended info')
+    .option('-r, --root <dir>', 'Optionally root directory')
+    .action(function(envName, options) {
+      let settings = {
+        RootDirectory: CommonFunc.getRoot(options)
+      };
+      let MFWCli = new ProjectClass(settings);
+
+      if (envName) {
+        if (envName == 'default') {
+          envName = '';
+        }
+        MFWCli.envSet(envName);
+      }
+      if (options.list) {
+        var envs = CommonFunc.findEnvironments(settings.RootDirectory, options.extended);
+        console.log(JSON.stringify(envs, null, 2));
+      }
     });
 
 }
