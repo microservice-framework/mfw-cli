@@ -14,11 +14,11 @@ const client = require('../includes/MFWClient.js');
 commander.version(pkg.version).usage('[cmd] [options] [mode]');
 
 // Load core modules.
-try{
+try {
   let plugins = fs.readdirSync(__dirname + '/../mfw/');
   for (let filename of plugins) {
     console.log(filename);
-    require('../mfw/' + filename)(commander);
+    require('../mfw/' + filename).commander(commander);
   }
 } catch(e) {
   console.log(e);

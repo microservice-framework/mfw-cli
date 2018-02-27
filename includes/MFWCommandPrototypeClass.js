@@ -20,10 +20,10 @@ class MFWCommandPrototypeClass extends EventEmitter {
    *   - RootDirectory - resolved path to project directory.
    *   - envName - environment name.
    */
-  constructor(settings){
+  constructor(settings) {
     super();
     this.isExiting = false;
-    if(settings.RootDirectory) {
+    if (settings.RootDirectory) {
       this.RootDirectory = settings.RootDirectory;
     } else {
       this.RootDirectory = path.resolve(process.cwd());
@@ -87,7 +87,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
   /**
    * Print Messages. Executed process.on('exit').
    */
-  printMessages(){
+  printMessages() {
     for (let type in this.messages) {
       if (this.messages[type].length > 0) {
         for (let message of this.messages[type]) {
@@ -132,7 +132,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
    *
    * @return {boolean} true if valid.
    */
-  validateRootDirForInit(){
+  validateRootDirForInit() {
     let stat;
     try {
       stat = fs.statSync(this.RootDirectory);
