@@ -797,6 +797,34 @@ class ProjectClass extends MFWCommandPrototypeClass {
       this.emit('isPackageJSON', null, packageJSONFile);
     });
   }
+
+  /**
+   * Fix project directory.
+   */
+  fixProject() {
+    if (!this.validateRootDir()) {
+      return this.message('error', 'Directory structure failed.');
+    }
+    this.message('ok', 'Directory structure checked.');
+
+
+    this.on('isPackageJSON', (err, packageJSONPath) => {
+      if (err) {
+        return this.message('error', e.message);
+      }
+      this.restoreModules();
+    });
+    // this.installGitIgnore();
+
+    let packageJSONFile = this.getPackageJSONPath();
+    fs.stat(packageJSONFile, (err, stats) => {
+      if (err) {
+        return this.generatePackageJSON();
+      }
+      this.emit('isPackageJSON', null, packageJSONFile);
+    });
+
+  }
 }
 
 /**
@@ -1550,7 +1578,16 @@ module.exports.commander = function(commander) {
         console.log(JSON.stringify(envs, null, 2));
       }
     });
-
+  commander.command('fix')
+    .description('Fix directory structure for project.')
+    .option('-r, --root <dir>', 'Optionally root directory')
+    .action(function(options) {
+      let settings = {
+        RootDirectory: CommonFunc.getRoot(options)
+      };
+      let MFWCli = new ProjectClass(settings);
+      MFWCli.fixProject();
+    });
 }
 
 /**

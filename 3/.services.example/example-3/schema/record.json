@@ -1,0 +1,22 @@
+{
+  "id": "/Record",
+  "type": "object",
+  "properties": {
+    "record_id": {
+      "type": "number",
+      "description": "Record unqie id.",
+      "required": true
+    },
+    "user": {
+      "description": "Record username.",
+      "type": "string",
+      "required": true
+    },
+    "body": {
+      "type": "string",
+      "description": "Record body.",
+      "required": true
+    }
+  }
+}
+

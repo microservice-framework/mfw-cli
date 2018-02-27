@@ -26,38 +26,7 @@ try {
 }
 
 /*
-commander.command('init [dir]')
-  .description('Init directory as a project.')
-  .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
-  .action(MFWCli.initProject);
 
-commander.command('install [service]')
-  .description('Install microservice.'
-    + 'Use nothing or "all" to install all services saved in package.json.')
-  .option('-r, --root <dir>', 'Optionaly root directory')
-  .option('-s, --save', 'Save microservice information')
-  .option('-d, --default', 'Set default values')
-  .action(MFWCli.installService);
-
-commander.command('update [service]')
-  .description('Update microservice.'
-    + 'Use nothing or "all" to update or install all services saved in package.json.')
-  .option('-r, --root <dir>', 'Optionally root directory')
-  .option('-d, --default', 'Set default values')
-  .action(MFWCli.updateService);
-
-commander.command('uninstall <service>')
-  .description('Uninstall microservice')
-  .option('-r, --root <dir>', 'Optionally root directory')
-  .option('-s, --save', 'Save microservice information')
-  .action(MFWCli.uninstallService);
-
-commander.command('env [env]')
-  .description('setup env directory')
-  .option('-l, --list', 'List enabled Environments.')
-  .option('-e, --extended', 'Print extended info')
-  .option('-r, --root <dir>', 'Optionally root directory')
-  .action(MFWCli.envList);
 
 commander.command('start <service>')
   .description('Start microservice(s). Use "all" to install all services saved in package.json.')
@@ -69,11 +38,6 @@ commander.command('stop <service>')
   .description('Stop microservice(s). Use "all" to install all services saved in package.json.')
   .option('-r, --root <dir>', 'Optionally root directory')
   .action(MFWCli.stopService);
-
-commander.command('fix')
-  .description('Fix directory structure for project.')
-  .option('-r, --root <dir>', 'Optionally root directory')
-  .action(MFWCli.fix);
 
 commander.command('status [service]')
   .description('Microservice(s) status')
