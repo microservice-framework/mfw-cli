@@ -26,4 +26,8 @@ Message.prototype.message = function(message) {
   console.log('\t' + colors.gray(message));
 }
 
+Message.prototype.progress = function(message) {
+  console.log(colors.gray('\t-\t' + message));
+}
+
 exports = module.exports = new Message();

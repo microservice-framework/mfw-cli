@@ -4,15 +4,28 @@
 
 const commander = require('commander');
 const path = require('path');
-const fs = require('fs');
+const fs = require('fs-extra');
 const pkg = require('../package.json');
 const Message = require('../includes/message.js');
-const MFWCli = require('../includes/MFWCliClass.js');
+/*const MFWCli = require('../includes/MFWCliClass.js');
 const status = require('../includes/MFWCliStatus.js');
 const client = require('../includes/MFWClient.js');
-
+*/
 commander.version(pkg.version).usage('[cmd] [options] [mode]');
 
+// Load core modules.
+try{
+  let plugins = fs.readdirSync(__dirname + '/../mfw/');
+  for (let filename of plugins) {
+    console.log(filename);
+    require('../mfw/' + filename)(commander);
+  }
+} catch(e) {
+  console.log(e);
+  Message.error('Failed to read plugins directory: ' + e.message);
+}
+
+/*
 commander.command('init [dir]')
   .description('Init directory as a project.')
   .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
@@ -106,6 +119,8 @@ commander.command('client-search <service> <JSONDATA>')
     'Optionally access token. If no token is provided, then SECURE_KEY is used instead.')
   .action(client.clientSEARCH);
 
+
+MFWCli.commands(commander);*/
 
 commander.parse(process.argv);
 
