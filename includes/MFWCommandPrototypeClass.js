@@ -309,6 +309,62 @@ class MFWCommandPrototypeClass extends EventEmitter {
     }
     return resultStatus;
   }
+  /**
+   * Prepare module object.
+   *
+   * @param {string} module - service name.
+   * @param {function} callback - callback when module prepared.
+   */
+  prepareModule(module, callback) {
+    let packageJSON = this.getPackageJSON();
+    if (packageJSON.services && packageJSON.services[module]) {
+      let shortName = module;
+      let sourceName = '';
+      if (typeof packageJSON.services[shortName] !== 'string') {
+        if (packageJSON.services[shortName].source) {
+          sourceName = packageJSON.services[shortName].source;
+        }
+      } else {
+        sourceName = packageJSON.services[shortName];
+      }
+      let moduleInfo = {
+        full: sourceName,
+        short: shortName,
+        installDir: this.RootDirectory + '/services/' + shortName,
+        envFile: this.RootDirectory + '/configs/' + shortName + '.env',
+      }
+
+      if (this.envName != '') {
+        moduleInfo.envFile = this.RootDirectory + '/configs/' + this.envName
+          + '.' + shortName + '.env';
+      }
+      return callback(moduleInfo);
+    }
+
+    fs.stat(module, (err, stats) => {
+      if (!err) {
+        module = path.resolve(module);
+      }
+      let nameArray = module.split('/');
+      let shortName = nameArray.pop();
+
+      if (!shortName || shortName == '') {
+        shortName = nameArray.pop();
+      }
+
+      module = {
+        full: module,
+        short: shortName,
+        installDir: this.RootDirectory + '/services/' + shortName,
+        envFile: this.RootDirectory + '/configs/' + shortName + '.env',
+      }
+      if (this.envName != '') {
+        module.envFile = this.RootDirectory + '/configs/' + this.envName
+          + '.' + shortName + '.env';
+      }
+      callback(module);
+    });
+  }
 }
 
 module.exports = MFWCommandPrototypeClass;
