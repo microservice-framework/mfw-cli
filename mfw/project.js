@@ -634,6 +634,34 @@ class ProjectClass extends MFWCommandPrototypeClass {
   }
 
   /**
+   * Remove module data to Package ( project) JSON file.
+   * Happens when running install --save option.
+   *
+   * @param {object} module - module data.
+   */
+  removeModuleFromPackageJSON(module) {
+    if (!this.isSaveOption) {
+      return;
+    }
+    let packageJSONFile = this.getPackageJSONPath();
+    let packageJSON = this.getPackageJSON();
+
+    if (!packageJSON.services) {
+      packageJSON.services = {}
+    }
+    if (packageJSON.services[module.short]) {
+      delete packageJSON.services[module.short];
+    }
+
+    // Todo. Implement lock file to avoid simuntanius overwrite.
+    fs.writeFile(packageJSONFile, JSON.stringify(packageJSON, null, 2), (err) => {
+      if (err) {
+        return this.message('error', err.message);
+      }
+    });
+  }
+
+  /**
    * Install service to ROOTDIR/services/SERVICE_NAME directory.
    *
    * @param {string} module - service name. Example: @microservice-framework/microservice-router
@@ -703,6 +731,36 @@ class ProjectClass extends MFWCommandPrototypeClass {
       });
     });
   }
+
+  /**
+   * Uninstall service from ROOTDIR/services/SERVICE_NAME directory.
+   *
+   * @param {string} RootDirectory - resolved path to project directory.
+   * @param {string} module - service name. Example: @microservice-framework/microservice-router
+   * @param {boolean} isSaveOption - remove service from (envname.)package.json file.
+   */
+  uninstallService(module, isSaveOption) {
+    this.isSaveOption = isSaveOption;
+
+    this.prepareModule(module, (module) => {
+      fs.stat(module.installDir, (err, stats) => {
+        if (err) {
+          return this.message('error', module.installDir + ' is missing');
+        }
+        if (!stats.isDirectory()) {
+          return this.message('error', module.installDir + ' is not a directory!');
+        }
+        fs.remove(module.installDir, (err) => {
+          if (err) {
+            return this.message('error', err.message);
+          }
+
+          this.removeModuleFromPackageJSON(module);
+          return this.message('ok', module.short + ' deleted');
+        });
+      });
+    });
+  }
 }
 
 /**
@@ -747,60 +805,6 @@ util.inherits(MFWCliClass, EventEmitter);
 
 
 
-
-/**
- * Update service in ROOTDIR/services/SERVICE_NAME directory.
- *
- * @param {string} module - service name.
- *   Example: @microservice-framework/microservice-router
- *   Example: microservice-router
- */
-MFWCliClass.prototype.update = function(module, isDefaultValues) {
-  var self = this;
-
-  if (!self.validateRootDir()) {
-    return self.message('error', 'Installation Failed');
-  }
-
-  self.isDefaultValues = isDefaultValues;
-
-  self.on('isModuleExists', self.isModuleExistsForUpdate);
-  self.on('isModuleDownloaded', self.isModuleDownloadedForUpdate);
-
-  self.prepareModule(module, function(module) {
-    self.checkModule(module);
-  });
-}
-
-/**
- * Update all services.
- */
-MFWCliClass.prototype.updateAll = function() {
-  var self = this;
-
-  if (!self.validateRootDir()) {
-    return self.message('error', 'Installation Failed');
-  }
-  self.restoreModules();
-}
-
-/**
- * Uninstall service from ROOTDIR/services/SERVICE_NAME directory.
- *
- * @param {string} RootDirectory - resolved path to project directory.
- * @param {string} module - service name. Example: @microservice-framework/microservice-router
- * @param {boolean} isSaveOption - remove service from (envname.)package.json file.
- */
-MFWCliClass.prototype.uninstall = function(module, isSaveOption) {
-  var self = this;
-  self.isSaveOption = isSaveOption;
-
-  self.on('isModuleExists', self.isModuleExistsForUninstall);
-
-  self.prepareModule(module, function(module) {
-    self.checkModule(module);
-  });
-}
 
 /**
  * Switch environment and init if new one.
@@ -1504,6 +1508,17 @@ module.exports.commander = function(commander) {
         return MFWCli.updateAll();
       }
       return MFWCli.updateService(service, options.default);
+    });
+  commander.command('uninstall <service>')
+    .description('Uninstall microservice')
+    .option('-r, --root <dir>', 'Optionally root directory')
+    .option('-s, --save', 'Save microservice information')
+    .action(function(service, options) {
+      let settings = {
+        RootDirectory: CommonFunc.getRoot(options)
+      };
+      let MFWCli = new ProjectClass(settings);
+      MFWCli.uninstallService(service, options.save);
     });
 
 }
