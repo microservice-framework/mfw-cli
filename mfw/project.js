@@ -640,7 +640,7 @@ class ProjectClass extends MFWCommandPrototypeClass {
    * @param {boolean} isSaveOption - save service to (envname.)package.json file.
    * @param {boolean} isDefaultValues - silent mode. Apply default values.
    */
-  installModule (moduleName, isSaveOption, isDefaultValues) {
+  installService (moduleName, isSaveOption, isDefaultValues) {
     if (!this.validateRootDir()) {
       return this.message('error', 'Installation Failed');
     }
@@ -670,6 +670,38 @@ class ProjectClass extends MFWCommandPrototypeClass {
       return self.message('error', 'Installation Failed');
     }
     this.restoreModules();
+  }
+
+  /**
+   * Update service in ROOTDIR/services/SERVICE_NAME directory.
+   *
+   * @param {string} module - service name.
+   *   Example: @microservice-framework/microservice-router
+   *   Example: microservice-router
+   */
+  updateService(module, isDefaultValues) {
+    if (!this.validateRootDir()) {
+      return this.message('error', 'Installation Failed');
+    }
+
+    this.isDefaultValues = isDefaultValues;
+
+    this.on('moduleDownloaded', (module) => {
+      this.isModuleDownloadedForUpdate(module);
+    });
+
+    this.prepareModule(module, (module) => {
+      fs.stat(module.installDir, (err, stats) => {
+        if (err) {
+          return this.message('error', module.full + ' is not installed yet');
+        }
+        if (!stats.isDirectory()) {
+          return this.message('error', module.installDir + ' is not a directory!');
+        }
+        module.tmpDir = tmp.dirSync();
+        this.downloadPackage(module);
+      });
+    });
   }
 }
 
@@ -1450,8 +1482,30 @@ module.exports.commander = function(commander) {
           return;
         }
       } catch(e) {}
-      MFWCli.installModule(service, options.save, options.default);
+      MFWCli.installService(service, options.save, options.default);
     });
+
+  commander.command('update [service]')
+    .description('Update microservice.'
+      + 'Use nothing or "all" to update or install all services saved in package.json.')
+    .option('-r, --root <dir>', 'Optionally root directory')
+    .option('-d, --default', 'Set default values')
+    .action(function(service, options) {
+      let settings = {
+        RootDirectory: CommonFunc.getRoot(options)
+      };
+      let MFWCli = new ProjectClass(settings);
+
+      if (!service) {
+        service = 'all';
+      }
+
+      if (service == 'all') {
+        return MFWCli.updateAll();
+      }
+      return MFWCli.updateService(service, options.default);
+    });
+
 }
 
 /**
