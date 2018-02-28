@@ -22,7 +22,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
    */
   constructor(settings) {
     super();
-    if(process.argv.indexOf('--json') !== -1) {
+    if (process.argv.indexOf('--json') !== -1) {
       this.isJsonOutput = true;
     }
     this.isExiting = false;
@@ -50,7 +50,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
       // prevent multiple printMessages on multiple beforeExit calls.
       if (!this.isExiting) {
         this.isExiting = true;
-        if(this.messages.error.length > 0 ){
+        if (this.messages.error.length > 0) {
           process.exitCode = 1
         }
         this.printMessages();
@@ -87,7 +87,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
    * Print imidiate messages.
    */
   progressMessage(message) {
-    if(!this.isJsonOutput){
+    if (!this.isJsonOutput) {
       Message.progress(message);
     }
   }
@@ -96,7 +96,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
    * Print Messages. Executed process.on('exit').
    */
   printMessages() {
-    if(this.isJsonOutput){
+    if (this.isJsonOutput) {
       console.log(JSON.stringify(this.messages, null, 2));
       return;
     }

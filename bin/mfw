@@ -8,7 +8,9 @@ const fs = require('fs-extra');
 const pkg = require('../package.json');
 const Message = require('../includes/message.js');
 
-commander.version(pkg.version).option('--json', 'enable json output').usage('[cmd] [options] [mode]');
+commander.version(pkg.version)
+  .option('--json', 'enable json output')
+  .usage('[cmd] [options] [mode]');
 
 // Load core modules.
 try {

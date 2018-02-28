@@ -27,7 +27,7 @@ class StatusClass extends MFWCommandPrototypeClass {
    * Print Messages. Executed process.on('exit').
    */
   printMessages() {
-    if(this.isJsonOutput){
+    if (this.isJsonOutput) {
       super.printMessages();
       return;
     }
@@ -63,7 +63,7 @@ class StatusClass extends MFWCommandPrototypeClass {
         ]);
       }
     }
-  
+
     if (rows.length == 0) {
       return;
     }
@@ -479,7 +479,6 @@ module.exports.commander = function(commander) {
         return status.stopAllServices();
       }
       status.stopService(service);
-    }
-);
+    });
 
 }
