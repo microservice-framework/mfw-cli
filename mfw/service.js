@@ -163,10 +163,8 @@ class StatusClass extends MFWCommandPrototypeClass {
 
   /**
    * All Services STATUS.
-   *
-   * @param {string} module - service name. Example: microservice-router
    */
-  statusAllServices(module) {
+  statusAllServices() {
     if (!this.validateRootDir()) {
       return this.message('error', 'Status Failed');
     }
@@ -215,7 +213,8 @@ class StatusClass extends MFWCommandPrototypeClass {
       stop: 'stop',
       cpu: '',
       mem: '',
-      package: module.package
+      package: module.package,
+      service: module,
     }
     if (typeof data === 'boolean'){
       status.error = 'No pid file available.';
@@ -267,7 +266,7 @@ class StatusClass extends MFWCommandPrototypeClass {
    */
   startService(serviceName, isDevelMode) {
     if (!this.validateRootDir()) {
-      return this.message('error', 'Status Failed');
+      return this.message('error', serviceName + ' start Failed');
     }
 
     this.devel = isDevelMode;
@@ -282,18 +281,35 @@ class StatusClass extends MFWCommandPrototypeClass {
     });
 
     this.statusService(serviceName);
-/*
-    var status = statusCheck(self.RootDirectory, serviceName);
-    status.on('status', function(service, status) {
-      self.message('error', status.name + ' already running.');
-    });
-    status.on('error', function(error, service, status) {
-      if (status) {
-        return self.startService(service, status.start);
-      }
-      self.startService(service);
-    });*/
   }
+
+  /**
+   * All Services START.
+   */
+  startAllServices(isDevelMode) {
+    if (!this.validateRootDir()) {
+      return this.message('error', 'Start All Failed');
+    }
+
+    this.devel = isDevelMode;
+    this.isReport = true;
+
+    this.on('status', (status) => {
+      console.log('status', status);
+      if(!status.error) {
+        return this.message('error', status.name + ' already running.');
+      }
+      this.execStartService(status.service.short, status.start);
+    });
+
+    let packageJSON = this.getPackageJSON();
+    if (packageJSON.services) {
+      for (let serviceName in packageJSON.services) {
+        this.statusService(serviceName);
+      }
+    }
+  }
+
 
   /**
    * Start service by name.
