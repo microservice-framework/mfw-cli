@@ -7,16 +7,221 @@ const tmp = require('tmp');
 const exec = require('child_process').exec;
 const spawn = require('cross-spawn');
 const path = require('path');
-const prompt = require('prompt');
-const colors    = require('colors/safe');
-const tar = require('tar');
-const CommonFunc = require('./common.js');
+const pusage = require('pidusage');
+const colors = require('colors/safe');
+const Table = require('cli-table');
 
-const Message = require('../includes/message.js');
-const tokenGenerate = require('./token-generate.js');
-const statusCheck = require('./MFWCliStatus.js').StatusCheck;
+const CommonFunc = require('../includes/common.js');
+const MFWCommandPrototypeClass = require('../includes/MFWCommandPrototypeClass.js');
 
-prompt.message = '';
+
+class StatusClass extends MFWCommandPrototypeClass {
+  constructor(settings) {
+    super(settings);
+    this.messages = {
+      ok: [],
+      error: [],
+      warning: [],
+    status: [],
+      unknown: [],
+    }
+  }
+  /**
+   * Print Messages. Executed process.on('exit').
+   */
+  printMessages() {
+    var rows = [];
+    for (let type in this.messages) {
+      if (this.messages[type].length > 0) {
+        for (let message of this.messages[type]) {
+          if (type == 'status') {
+            var version = 'und';
+            if (message.package && message.package.version) {
+              version =  message.package.version;
+            }
+            if (message.error) {
+              rows.push([
+                colors.red(message.name),
+                colors.gray(version),
+                colors.gray(message.pid),
+                '',
+                '',
+                message.error
+              ]);
+              continue;
+            }
+            rows.push([
+              colors.green(message.name),
+              colors.gray(version),
+              colors.gray(message.pid),
+              message.cpu,
+              message.mem,
+              ''
+            ]);
+            continue;
+          }
+          Message[type](message);
+        }
+      }
+    }
+    var table = new Table({ head: ['SERVICE ', 'VERSION ', 'PID ', 'CPU  ', 'MEM  ', 'Comment'] ,
+      chars: { top: '' , 'top-mid': '' , 'top-left': ' ' , 'top-right': ''
+        , bottom: ' ' , 'bottom-mid': '' , 'bottom-left': ' ' , 'bottom-right': ''
+        , left: ' ' , 'left-mid': ' ' , mid: '-' , 'mid-mid': '-'
+        , right: ' ' , 'right-mid': '' , middle: '' },
+      style: { head: ['black', 'inverse']}
+    });
+    rows = rows.sort(function Comparator(a, b) {
+      if (a[0] < b[0]) {
+        return -1;
+      }
+      if (a[0] > b[0]) {
+        return 1;
+      }
+      return 0;
+    });
+    var count = {};
+    count.services = rows.length;
+    count.up = 0;
+    count.down = 0;
+    count.cpu = 0;
+    count.mem = 0;
+    for (var i in rows) {
+      table.push(rows[i]);
+      if (rows[i][5]  == '') {
+        count.up = count.up + 1;
+        count.cpu = count.cpu + parseFloat(rows[i][3]);
+        count.mem = count.mem + parseFloat(rows[i][4]);
+      } else {
+        count.down = count.down + 1;
+      }
+    }
+    table.push([
+      colors.green(count.up) + ' / ' + colors.red(count.down),
+      '',
+      '',
+      colors.blue(count.cpu) + colors.gray(' %'),
+      colors.blue(count.mem) + colors.gray(' Mb'),
+    ])
+    console.log(table.toString());
+  }
+
+  statusService(module) {
+    if (!this.validateRootDir()) {
+      return this.message('error', 'Status Failed');
+    }
+
+    this.prepareModule(module, (module) => {
+      fs.stat(module.installDir, (err, stats) => {
+        if (err) {
+          return this.message('error', module.full + ' is not installed yet');
+        }
+        if (!stats.isDirectory()) {
+          return this.message('error', module.installDir + ' is not a directory!');
+        }
+        try {
+          var modulePackageJSON = JSON.parse(fs.readFileSync(module.installDir + '/package.json'));
+        } catch (e) {
+          this.message('error', 'Failed to read: ' + module.installDir + '/package.json');
+          this.message('error', e.message);
+          return;
+        }
+        if (!modulePackageJSON.scripts || modulePackageJSON.scripts.length == 0) {
+          return this.message('error', 'Failed to get status for ' + module.module
+            + ' - scripts not defined');
+        }
+        module.package = modulePackageJSON;
+
+        let listToCheck = [];
+        for (let name in modulePackageJSON.scripts) {
+          if (name.indexOf('status') != -1) {
+            listToCheck.push({
+              name: name,
+              script: modulePackageJSON.scripts[name]
+            });
+          }
+        }
+        if (listToCheck.length == 0) {
+          this.progressMessage(module.module + ' don\'t have status');
+          return;
+        }
+        for (let item of listToCheck) {
+          this.processStatusCommand(module, item);
+        }
+      });
+    });
+  }
+
+  /**
+   * Check module status.
+   *
+   * @param {object} module - module data.
+   */
+  processStatusCommand(module, script) {
+
+    this.progressMessage('checking ' + module.short + ':' + script.name);
+    let env = process.env;
+    env.npm_package_name = module.short;
+    exec(script.script, {cwd: module.installDir, env: env}, (err, stdout, stderr) => {
+      if (err) {
+        return this.message('error',  err.message);
+      }
+      try {
+        var result = JSON.parse(stdout);
+        for (var name in result) {
+          this.processPidUsage(result[name], name, module);
+        }
+      }catch(e) {
+        return this.message('error',  e.message);
+      }
+    });
+  }
+
+  /**
+   * Check module status.
+   *
+   * @param {object} module - module data.
+   */
+  processPidUsage(data, name, module) {
+    var status = {
+      name: name,
+      pid: false,
+      start: 'start',
+      stop: 'stop',
+      cpu: '',
+      mem: '',
+      package: module.package
+    }
+    if (typeof data === 'boolean'){
+      status.error = 'No pid file available.';
+      this.message('status', status);
+      return;
+    }
+    if (typeof data === 'string' || typeof data === 'string') {
+      status.pid = data;
+    } else {
+      status.pid = data.pid;
+      status.start = data.start;
+      status.stop = data.stop;
+    }
+    if (status.pid === false) {
+      status.error = 'No pid file available.';
+      this.message('status', status);
+      return;
+    }
+    pusage.stat(status.pid, (err, stat) => {
+      if (err) {
+        status.error = 'Failed to get status by PID : ' + status.pid;
+        this.message('status', status);
+        return;
+      }
+      status.cpu = stat.cpu.toFixed(2);
+      status.mem = Math.round(stat.memory / 1024 / 1024);
+      this.message('status', status);
+      return;
+    });
+  }
+}
 /**
  * Incapsulate logic for mfw-cli commands.
  * @constructor.
@@ -57,141 +262,6 @@ function MFWCliClass(settings) {
 
 util.inherits(MFWCliClass, EventEmitter);
 
-/**
- * Prepare project directory and package.json.
- *
- */
-MFWCliClass.prototype.initProject = function() {
-  var self = this;
-
-  if (!self.validateRootDirForInit()) {
-    return self.message('error', 'Init Failed');
-  }
-
-  self.installGitIgnore();
-  self.on('isPackageJSON', function(err, packageJSONPath) {
-    if (err) {
-      return self.message('error', e.message);
-    }
-    self.message('ok', 'Init completed');
-    self.currentEnv = self.getEnvName();
-    if (self.currentEnv !== self.envName) {
-      self.isDefaultValues = true;
-      self.performEnvSwitch();
-    }
-  });
-  self.generatePackageJSON();
-
-}
-
-/**
- * Install service to ROOTDIR/services/SERVICE_NAME directory.
- *
- * @param {string} module - service name. Example: @microservice-framework/microservice-router
- * @param {boolean} isSaveOption - save service to (envname.)package.json file.
- * @param {boolean} isDefaultValues - silent mode. Apply default values.
- */
-MFWCliClass.prototype.install = function(module, isSaveOption, isDefaultValues) {
-  var self = this;
-
-  if (!self.validateRootDir()) {
-    return self.message('error', 'Installation Failed');
-  }
-  self.isSaveOption = isSaveOption;
-  self.isDefaultValues = isDefaultValues;
-
-  self.on('isModuleExists', self.isModuleExists);
-  self.on('isModuleDownloaded', self.isModuleDownloaded);
-
-  self.prepareModule(module, function(module) {
-    self.checkModule(module);
-  });
-}
-
-/**
- * Update service in ROOTDIR/services/SERVICE_NAME directory.
- *
- * @param {string} module - service name.
- *   Example: @microservice-framework/microservice-router
- *   Example: microservice-router
- */
-MFWCliClass.prototype.update = function(module, isDefaultValues) {
-  var self = this;
-
-  if (!self.validateRootDir()) {
-    return self.message('error', 'Installation Failed');
-  }
-
-  self.isDefaultValues = isDefaultValues;
-
-  self.on('isModuleExists', self.isModuleExistsForUpdate);
-  self.on('isModuleDownloaded', self.isModuleDownloadedForUpdate);
-
-  self.prepareModule(module, function(module) {
-    self.checkModule(module);
-  });
-}
-
-/**
- * Update all services.
- */
-MFWCliClass.prototype.updateAll = function() {
-  var self = this;
-
-  if (!self.validateRootDir()) {
-    return self.message('error', 'Installation Failed');
-  }
-  self.restoreModules();
-}
-
-/**
- * Uninstall service from ROOTDIR/services/SERVICE_NAME directory.
- *
- * @param {string} RootDirectory - resolved path to project directory.
- * @param {string} module - service name. Example: @microservice-framework/microservice-router
- * @param {boolean} isSaveOption - remove service from (envname.)package.json file.
- */
-MFWCliClass.prototype.uninstall = function(module, isSaveOption) {
-  var self = this;
-  self.isSaveOption = isSaveOption;
-
-  self.on('isModuleExists', self.isModuleExistsForUninstall);
-
-  self.prepareModule(module, function(module) {
-    self.checkModule(module);
-  });
-}
-
-/**
- * Switch environment and init if new one.
- *
- * @param {string} envName - environment name.
- */
-MFWCliClass.prototype.envSet = function(envName) {
-  var self = this;
-  self.currentEnv = self.getEnvName();
-  self.envName = envName;
-  self.isDefaultValues = true;
-
-  if (self.currentEnv == self.envName) {
-    if (self.envName == '') {
-      return self.message('error', 'Already in: default');
-    }
-    return self.message('error', 'Already in: ' + self.envName);
-  }
-  self.on('isPackageJSON', function(err, packageJSONPath) {
-    if (err) {
-      return self.message('error', e.message);
-    }
-    self.currentEnv = self.getEnvName();
-    if (self.currentEnv !== self.envName) {
-      self.isDefaultValues = true;
-      self.performEnvSwitch();
-    }
-  });
-  self.checkPackageJSON();
-
-}
 
 /**
  * Start all services.
@@ -1536,6 +1606,28 @@ MFWCliClass.prototype.printMessages = function() {
 /**
  * Process init command.
  */
+module.exports.commands = function(commander) {
+  commander.command('init2 [dir]')
+    .description('Init directory as a project.')
+    .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
+    .action(function(rootDIR, options) {
+      let settings = {};
+      if (!rootDIR) {
+        rootDIR = process.cwd();
+      }
+      settings.RootDirectory = path.resolve(rootDIR);
+      settings.envName = options.env;
+      if (!settings.envName) {
+        settings.envName = '';
+      }
+      let MFWCli = new MFWCliClass(settings);
+      MFWCli.initProject();
+    });
+}
+
+/**
+ * Process init command.
+ */
 module.exports.initProject = function(rootDIR, options) {
   let settings = {};
   if (!rootDIR) {
@@ -1678,4 +1770,24 @@ module.exports.fix = function(options) {
   };
   let MFWCli = new MFWCliClass(settings);
   MFWCli.fix();
+}
+
+module.exports.StatusClass = StatusClass;
+/**
+ * Process commands.
+ */
+module.exports.commander = function(commander) {
+commander.command('status [service]')
+  .description('Microservice(s) status')
+  .option('-r, --root <dir>', 'Optionally root directory')
+  .action(function(service, options) {
+
+    let settings = {
+      RootDirectory: CommonFunc.getRoot(options)
+    };
+  
+    let status = new StatusClass(settings);
+    status.statusService(service);
+  });
+
 }
