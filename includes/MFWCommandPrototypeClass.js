@@ -22,6 +22,9 @@ class MFWCommandPrototypeClass extends EventEmitter {
    */
   constructor(settings) {
     super();
+    if(process.argv.indexOf('--json') !== -1) {
+      this.isJsonOutput = true;
+    }
     this.isExiting = false;
     if (settings.RootDirectory) {
       this.RootDirectory = settings.RootDirectory;
@@ -81,13 +84,19 @@ class MFWCommandPrototypeClass extends EventEmitter {
    * Print imidiate messages.
    */
   progressMessage(message) {
-    Message.progress(message);
+    if(!this.isJsonOutput){
+      Message.progress(message);
+    }
   }
 
   /**
    * Print Messages. Executed process.on('exit').
    */
   printMessages() {
+    if(this.isJsonOutput){
+      console.log(JSON.stringify(this.messages, null, 2));
+      return;
+    }
     for (let type in this.messages) {
       if (this.messages[type].length > 0) {
         for (let message of this.messages[type]) {
@@ -304,7 +313,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
         }
       }
     } catch(e) {
-      this.message('error', self.getPackageJSONPath() + ' does not exist');
+      this.message('error', this.getPackageJSONPath() + ' does not exist');
       resultStatus = false;
     }
     return resultStatus;

@@ -27,40 +27,43 @@ class StatusClass extends MFWCommandPrototypeClass {
    * Print Messages. Executed process.on('exit').
    */
   printMessages() {
-    var rows = [];
-    for (let type in this.messages) {
-      if (this.messages[type].length > 0) {
-        for (let message of this.messages[type]) {
-          if (type == 'status') {
-            var version = 'und';
-            if (message.package && message.package.version) {
-              version =  message.package.version;
-            }
-            if (message.error) {
-              rows.push([
-                colors.red(message.name),
-                colors.gray(version),
-                colors.gray(message.pid),
-                '',
-                '',
-                message.error
-              ]);
-              continue;
-            }
-            rows.push([
-              colors.green(message.name),
-              colors.gray(version),
-              colors.gray(message.pid),
-              message.cpu,
-              message.mem,
-              ''
-            ]);
-            continue;
-          }
-          Message[type](message);
+    if(this.isJsonOutput){
+      super.printMessages();
+      return;
+    }
+    let rows = [];
+    let status = this.messages.status;
+    delete this.messages.status;
+    super.printMessages();
+
+    if (status.length > 0) {
+      for (let message of status) {
+        var version = 'und';
+        if (message.package && message.package.version) {
+          version =  message.package.version;
         }
+        if (message.error) {
+          rows.push([
+            colors.red(message.name),
+            colors.gray(version),
+            colors.gray(message.pid),
+            '',
+            '',
+            message.error
+          ]);
+          continue;
+        }
+        rows.push([
+          colors.green(message.name),
+          colors.gray(version),
+          colors.gray(message.pid),
+          message.cpu,
+          message.mem,
+          ''
+        ]);
       }
     }
+  
     if (rows.length == 0) {
       return;
     }
