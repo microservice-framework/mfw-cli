@@ -284,7 +284,7 @@ class StatusClass extends MFWCommandPrototypeClass {
   }
 
   /**
-   * All Services START.
+   * Start all Services.
    */
   startAllServices(isDevelMode) {
     if (!this.validateRootDir()) {
@@ -310,6 +310,54 @@ class StatusClass extends MFWCommandPrototypeClass {
     }
   }
 
+  /**
+   * Stop service.
+   *
+   * @param {string} serviceName - service name.
+   */
+  stopService(serviceName) {
+    if (!this.validateRootDir()) {
+      return this.message('error', serviceName + ' start Failed');
+    }
+
+    this.isReport = true;
+
+    this.on('status', (status) => {
+      console.log('status', status);
+      if(status.error) {
+        return this.message('error', status.name + ' ' + status.error);
+      }
+      this.execStopService(serviceName, status.stop);
+    });
+
+    this.statusService(serviceName);
+  }
+
+  /**
+   * Stop all Services.
+   */
+  stopAllServices() {
+    if (!this.validateRootDir()) {
+      return this.message('error', 'Stop All Failed');
+    }
+
+    this.isReport = true;
+
+    this.on('status', (status) => {
+      console.log('status', status);
+      if(status.error) {
+        return this.message('error', status.name + ' ' + status.error);
+      }
+      this.execStopService(status.service.short, status.stop);
+    });
+
+    let packageJSON = this.getPackageJSON();
+    if (packageJSON.services) {
+      for (let serviceName in packageJSON.services) {
+        this.statusService(serviceName);
+      }
+    }
+  }
 
   /**
    * Start service by name.
@@ -356,6 +404,27 @@ class StatusClass extends MFWCommandPrototypeClass {
       child.unref();
     }
   }
+  /**
+   * Stop service by name.
+   *
+   * @param {string} serviceName - service name.
+   */
+  execStopService(serviceName, name) {
+    let serviceDir = this.RootDirectory + '/services/' + serviceName;
+    this.progressMessage('stopping ' + serviceName + ':' + name);
+    let child = spawn('npm', ['run', name, '-s' ], {cwd: serviceDir, stdio: 'inherit'});
+    child.on('error', (err) => {
+      console.log(err);
+    });
+    child.on('exit', (code) => {
+      if(code == 0) {
+        this.message('ok', 'Stop signal sent to ' + serviceName + ':' + name);
+        return;
+      }
+      console.log('Child exited with code ' + code);
+    });
+  }
+
 }
 /**
  * Incapsulate logic for mfw-cli commands.
@@ -638,40 +707,6 @@ MFWCliClass.prototype.stopService = function(serviceName, name) {
   var serviceDir = self.RootDirectory + '/services/' + serviceName;
   self.progressMessage('stopping ' + serviceName + ':' + name);
   var child = spawn('npm', ['run', name, '-s' ], {cwd: serviceDir, stdio: 'inherit'});
-}
-
-/**
- * Fix project directory.
- */
-MFWCliClass.prototype.fix = function() {
-  var self = this;
-  fs.stat(self.RootDirectory, function(err, stats) {
-    if (err) {
-      return self.message('error', err.message);
-    }
-    if (!stats.isDirectory()) {
-      return self.message('error', self.RootDirectory + ' is not a directory!');
-    }
-
-    self.installGitIgnore();
-    self.generatePackageJSON();
-    var packageJSONFile = self.getPackageJSONPath();
-    try {
-      let stat = fs.statSync(packageJSONFile);
-      if (stat.isFile()) {
-        if (self.checkSkel()) {
-          self.message('ok', 'Directory structure checked.');
-          self.restoreModules();
-          return;
-        }
-        self.message('error', 'Directory structure failed.');
-        return;
-      }
-      return self.message('error', packageJSONFile + ' is not a file!');
-    } catch(e) {
-      return self.message('error', e.message);
-    }
-  });
 }
 
 /**
@@ -1930,7 +1965,7 @@ module.exports.commander = function(commander) {
       status.statusService(service);
     });
 
-  commander.command('start <service>')
+  commander.command('start [service]')
     .description('Start microservice(s). Use "all" to install all services saved in package.json.')
     .option('-r, --root <dir>', 'Optionally root directory')
     .option('-d, --devel', 'Optionally devel mode')
@@ -1948,7 +1983,7 @@ module.exports.commander = function(commander) {
       status.startService(service, options.devel);
     });
 
-  commander.command('stop <service>')
+  commander.command('stop [service]')
     .description('Stop microservice(s). Use "all" to install all services saved in package.json.')
     .option('-r, --root <dir>', 'Optionally root directory')
     .action(function(service, options) {
@@ -1962,9 +1997,9 @@ module.exports.commander = function(commander) {
       }
 
       if (service == 'all') {
-        return MFWCli.stopAll();
+        return status.stopAllServices();
       }
-      MFWCli.stop(service);
+      status.stopService(service);
     }
 );
 
