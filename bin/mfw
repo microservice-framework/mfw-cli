@@ -15,10 +15,10 @@ commander.version(pkg.version).usage('[cmd] [options] [mode]');
 
 // Load core modules.
 try {
-  let plugins = fs.readdirSync(__dirname + '/../mfw/');
+  let plugins = fs.readdirSync(__dirname + '/../plugins/');
   for (let filename of plugins) {
     console.log(filename);
-    require('../mfw/' + filename).commander(commander);
+    require('../plugins/' + filename).commander(commander);
   }
 } catch(e) {
   console.log(e);
