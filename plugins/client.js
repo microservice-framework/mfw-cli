@@ -259,9 +259,10 @@ module.exports.commander = function(commander) {
   commander.command('client-create <service> <JSONDATA>')
     .description('Create resource in service.')
     .option('-r, --root <dir>', 'Optionally root directory')
-    .option('-t, --token <token>', 'Optionally token. If no token provided, SECURE_KEY used.')
+    .option('-t, --token <token>',
+      'Optionally token. If no token provided, SECURE_KEY used.')
     .option('-a, --accesstoken <accesstoken>',
-    'Optionally access token. If no token is provided, then SECURE_KEY is used instead.')
+      'Optionally access token. If no token is provided, then SECURE_KEY is used instead.')
     .action(function(service, jsonData, options) {
       let settings = {
         RootDirectory: CommonFunc.getRoot(options)
@@ -296,7 +297,7 @@ module.exports.commander = function(commander) {
   commander.command('client-update <service> <id> <JSONDATA>')
     .description('Update resource by ID for service.')
     .option('-r, --root <dir>', 'Optionally root directory')
-    .option('-t, --token <token>', 'Optionally token. If no token is provided, then SECURE_KEY used.')
+    .option('-t, --token <token>', 'Optionally token. If no token, SECURE_KEY used.')
     .option('-a, --accesstoken <accesstoken>',
       'Optionally access token. If no token is provided, then SECURE_KEY is used instead.')
     .action(function(service, id, jsonData, options) {
