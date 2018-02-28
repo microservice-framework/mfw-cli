@@ -1,12 +1,8 @@
 'use strict';
 
-const EventEmitter = require('events').EventEmitter;
-const util = require('util');
 const fs = require('fs-extra');
-const tmp = require('tmp');
 const exec = require('child_process').exec;
 const spawn = require('cross-spawn');
-const path = require('path');
 const pusage = require('pidusage');
 const colors = require('colors/safe');
 const Table = require('cli-table');
@@ -273,7 +269,6 @@ class StatusClass extends MFWCommandPrototypeClass {
     this.isReport = true;
 
     this.on('status', (status) => {
-      console.log('status', status);
       if (!status.error) {
         return this.message('error', status.name + ' already running.');
       }
@@ -295,7 +290,6 @@ class StatusClass extends MFWCommandPrototypeClass {
     this.isReport = true;
 
     this.on('status', (status) => {
-      console.log('status', status);
       if (!status.error) {
         return this.message('error', status.name + ' already running.');
       }
@@ -323,7 +317,6 @@ class StatusClass extends MFWCommandPrototypeClass {
     this.isReport = true;
 
     this.on('status', (status) => {
-      console.log('status', status);
       if (status.error) {
         return this.message('error', status.name + ' ' + status.error);
       }
@@ -344,7 +337,6 @@ class StatusClass extends MFWCommandPrototypeClass {
     this.isReport = true;
 
     this.on('status', (status) => {
-      console.log('status', status);
       if (status.error) {
         return this.message('error', status.name + ' ' + status.error);
       }
@@ -446,7 +438,6 @@ module.exports.commander = function(commander) {
       if (service == 'all') {
         return status.statusAllServices();
       }
-      console.log('service', service);
       status.statusService(service);
     });
 
