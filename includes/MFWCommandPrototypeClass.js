@@ -144,7 +144,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
    *
    * @return {boolean} true if valid.
    */
-  validateRootDirForInit() {
+  validateRootDirForInit(fixMode) {
     let stat;
     // Check ROOT DIR.
     try {
@@ -215,19 +215,21 @@ class MFWCommandPrototypeClass extends EventEmitter {
       fs.ensureDirSync(this.RootDirectory + '/pids/');
     }
 
-    // Check if package.json exists.
-    try {
-      stat = fs.statSync(this.getPackageJSONPath());
-      if (!stat.isFile()) {
-        this.message('error', this.getPackageJSONPath() + ' is not a valid file');
+    if(fixMode !== true) {
+      // Check if package.json exists.
+      try {
+        stat = fs.statSync(this.getPackageJSONPath());
+        if (!stat.isFile()) {
+          this.message('error', this.getPackageJSONPath() + ' is not a valid file');
+          return false;
+        }
+
+        this.message('error', this.getPackageJSONPath() + ' exists already.');
         return false;
+
+      } catch(e) {
+        // no [env.]package.json file. All is good.
       }
-
-      this.message('error', this.getPackageJSONPath() + ' exists already.');
-      return false;
-
-    } catch(e) {
-      // no [env.]package.json file. All is good.
     }
     return true;
   }

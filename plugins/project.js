@@ -636,7 +636,7 @@ class ProjectClass extends MFWCommandPrototypeClass {
   updateAll () {
     var self = this;
 
-    if (!this.validateRootDir()) {
+    if (!this.validateRootDirForInit(true)) {
       return self.message('error', 'Installation Failed');
     }
     this.restoreModules();
@@ -744,7 +744,7 @@ class ProjectClass extends MFWCommandPrototypeClass {
    * Fix project directory.
    */
   fixProject() {
-    if (!this.validateRootDir()) {
+    if (!this.validateRootDirForInit()) {
       return this.message('error', 'Directory structure failed.');
     }
     this.message('ok', 'Directory structure checked.');
