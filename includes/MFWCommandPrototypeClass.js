@@ -50,6 +50,9 @@ class MFWCommandPrototypeClass extends EventEmitter {
       // prevent multiple printMessages on multiple beforeExit calls.
       if (!this.isExiting) {
         this.isExiting = true;
+        if(this.messages.error.length > 0 ){
+          process.exitCode = 1
+        }
         this.printMessages();
       }
     });
