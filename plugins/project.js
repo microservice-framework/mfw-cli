@@ -1,11 +1,8 @@
 'use strict';
 
-const EventEmitter = require('events').EventEmitter;
-const util = require('util');
 const fs = require('fs-extra');
 const tmp = require('tmp');
 const exec = require('child_process').exec;
-const spawn = require('cross-spawn');
 const path = require('path');
 const prompt = require('prompt');
 const tar = require('tar');
