@@ -13,6 +13,7 @@ const Table = require('cli-table');
 
 const CommonFunc = require('../includes/common.js');
 const MFWCommandPrototypeClass = require('../includes/MFWCommandPrototypeClass.js');
+const Message = require('../includes/message.js');
 
 
 class StatusClass extends MFWCommandPrototypeClass {
@@ -64,6 +65,9 @@ class StatusClass extends MFWCommandPrototypeClass {
         }
       }
     }
+    if(rows.length == 0) {
+      return;
+    }
     var table = new Table({ head: ['SERVICE ', 'VERSION ', 'PID ', 'CPU  ', 'MEM  ', 'Comment'] ,
       chars: { top: '' , 'top-mid': '' , 'top-left': ' ' , 'top-right': ''
         , bottom: ' ' , 'bottom-mid': '' , 'bottom-left': ' ' , 'bottom-right': ''
@@ -106,6 +110,11 @@ class StatusClass extends MFWCommandPrototypeClass {
     console.log(table.toString());
   }
 
+  /**
+   * Service STATUS.
+   *
+   * @param {string} module - service name. Example: microservice-router
+   */
   statusService(module) {
     if (!this.validateRootDir()) {
       return this.message('error', 'Status Failed');
@@ -153,6 +162,22 @@ class StatusClass extends MFWCommandPrototypeClass {
   }
 
   /**
+   * All Services STATUS.
+   *
+   * @param {string} module - service name. Example: microservice-router
+   */
+  statusAllServices(module) {
+    if (!this.validateRootDir()) {
+      return this.message('error', 'Status Failed');
+    }
+    let packageJSON = this.getPackageJSON();
+    if (packageJSON.services) {
+      for (let shortName in packageJSON.services) {
+        this.statusService(shortName);
+      }
+    }
+  }
+  /**
    * Check module status.
    *
    * @param {object} module - module data.
@@ -194,6 +219,9 @@ class StatusClass extends MFWCommandPrototypeClass {
     }
     if (typeof data === 'boolean'){
       status.error = 'No pid file available.';
+      if(this.isReport) {
+        return this.emit('status', status);
+      }
       this.message('status', status);
       return;
     }
@@ -206,20 +234,111 @@ class StatusClass extends MFWCommandPrototypeClass {
     }
     if (status.pid === false) {
       status.error = 'No pid file available.';
+      if(this.isReport) {
+        return this.emit('status', status);
+      }
       this.message('status', status);
       return;
     }
     pusage.stat(status.pid, (err, stat) => {
       if (err) {
         status.error = 'Failed to get status by PID : ' + status.pid;
+        if(this.isReport) {
+          return this.emit('status', status);
+        }
         this.message('status', status);
         return;
       }
       status.cpu = stat.cpu.toFixed(2);
       status.mem = Math.round(stat.memory / 1024 / 1024);
+      if(this.isReport) {
+        return this.emit('status', status);
+      }
       this.message('status', status);
       return;
     });
+  }
+
+  /**
+   * Start service.
+   *
+   * @param {string} serviceName - service name.
+   * @param {boolean} isDevelMode - do not detach services from terminal and output log to stdout.
+   */
+  startService(serviceName, isDevelMode) {
+    if (!this.validateRootDir()) {
+      return this.message('error', 'Status Failed');
+    }
+
+    this.devel = isDevelMode;
+    this.isReport = true;
+
+    this.on('status', (status) => {
+      console.log('status', status);
+      if(!status.error) {
+        return this.message('error', status.name + ' already running.');
+      }
+      this.execStartService(serviceName, status.start);
+    });
+
+    this.statusService(serviceName);
+/*
+    var status = statusCheck(self.RootDirectory, serviceName);
+    status.on('status', function(service, status) {
+      self.message('error', status.name + ' already running.');
+    });
+    status.on('error', function(error, service, status) {
+      if (status) {
+        return self.startService(service, status.start);
+      }
+      self.startService(service);
+    });*/
+  }
+
+  /**
+   * Start service by name.
+   *
+   * @param {string} serviceName - service name.
+   */
+  execStartService(serviceName, name) {
+    let serviceDir = this.RootDirectory + '/services/' + serviceName;
+    let packageJSON = this.getPackageJSON();
+    let env = process.env;
+    env.mfw_package_name = packageJSON.name;
+    env.mfw_package_version = packageJSON.version;
+    env.mfw_package_description = packageJSON.description;
+
+    if (this.devel) {
+      this.progressMessage('starting ' + serviceName + ':' + name + ' in devel mode');
+      env.DEBUG = '*';
+      env.DEVEL = true;
+
+      let child = spawn('npm', ['run', name, '-s' ], {
+        cwd: serviceDir,
+        stdio: 'inherit',
+        env: env
+      });
+      child.on('error', (err) => {
+        console.log(err);
+      });
+      child.on('exit', (code) => {
+        console.log('Child exited with code ' + code);
+      });
+    } else {
+      this.progressMessage('starting '  + serviceName + ':' + name);
+      let child = spawn('npm', ['run', name ], {
+        cwd: serviceDir,
+        env: env,
+        detached: true,
+        stdio: 'ignore'
+      });
+      if (child.exitCode) {
+        this.message('error', 'Died with code' + child.exitCode);
+      }else {
+        this.message('ok', serviceName + ':' + name + ' started');
+      }
+      child.unref();
+    }
   }
 }
 /**
@@ -1777,17 +1896,60 @@ module.exports.StatusClass = StatusClass;
  * Process commands.
  */
 module.exports.commander = function(commander) {
-commander.command('status [service]')
-  .description('Microservice(s) status')
-  .option('-r, --root <dir>', 'Optionally root directory')
-  .action(function(service, options) {
+  commander.command('status [service]')
+    .description('Microservice(s) status')
+    .option('-r, --root <dir>', 'Optionally root directory')
+    .action(function(service, options) {
+      let settings = {
+        RootDirectory: CommonFunc.getRoot(options)
+      };
+      let status = new StatusClass(settings);
+      if(!service) {
+        service = 'all'
+      }
+      if(service == 'all') {
+        return status.statusAllServices();
+      }
+      console.log('service', service);
+      status.statusService(service);
+    });
 
-    let settings = {
-      RootDirectory: CommonFunc.getRoot(options)
-    };
-  
-    let status = new StatusClass(settings);
-    status.statusService(service);
-  });
+  commander.command('start <service>')
+    .description('Start microservice(s). Use "all" to install all services saved in package.json.')
+    .option('-r, --root <dir>', 'Optionally root directory')
+    .option('-d, --devel', 'Optionally devel mode')
+    .action(function(service, options) {
+      let settings = {
+        RootDirectory: CommonFunc.getRoot(options)
+      };
+      let status = new StatusClass(settings);
+      if (!service) {
+        service = 'all';
+      }
+      if (service == 'all') {
+        return status.startAllServices(options.devel);
+      }
+      status.startService(service, options.devel);
+    });
+
+  commander.command('stop <service>')
+    .description('Stop microservice(s). Use "all" to install all services saved in package.json.')
+    .option('-r, --root <dir>', 'Optionally root directory')
+    .action(function(service, options) {
+      let settings = {
+        RootDirectory: CommonFunc.getRoot(options)
+      };
+      let status = new StatusClass(settings);
+
+      if (!service) {
+        service = 'all';
+      }
+
+      if (service == 'all') {
+        return MFWCli.stopAll();
+      }
+      MFWCli.stop(service);
+    }
+);
 
 }
