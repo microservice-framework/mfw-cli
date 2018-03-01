@@ -354,6 +354,65 @@ class StatusClass extends MFWCommandPrototypeClass {
     }
   }
 
+  /**
+   * Restart service.
+   *
+   * @param {string} serviceName - service name.
+   */
+  restartService(serviceName) {
+    if (!this.validateRootDir()) {
+      return this.message('error', serviceName + ' start Failed');
+    }
+
+    this.isReport = true;
+
+    this.on('stopped', (serviceName, status) => {
+      this.execStartService(serviceName, status);
+    });
+
+    this.on('status', (status) => {
+      if (status.error) {
+        this.message('warning', status.name + ' ' + status.error);
+        this.execStartService(status.name, status);
+        return;
+      }
+      this.execStopService(serviceName, status);
+    });
+
+    this.statusService(serviceName);
+  }
+
+  /**
+   * Restart all Services.
+   */
+  restartAllServices() {
+    if (!this.validateRootDir()) {
+      return this.message('error', 'Stop All Failed');
+    }
+
+    this.isReport = true;
+
+    this.on('stopped', (serviceName, status) => {
+      this.execStartService(serviceName, status);
+    });
+
+    this.on('status', (status) => {
+      if (status.error) {
+        this.message('warning', status.name + ' ' + status.error);
+        this.execStartService(status.name, status);
+        return;
+      }
+      this.execStopService(status.service.short, status);
+    });
+
+    let packageJSON = this.getPackageJSON();
+    if (packageJSON.services) {
+      for (let serviceName in packageJSON.services) {
+        this.statusService(serviceName);
+      }
+    }
+  }
+
   prepareCmdForSpawn(cmdline) {
     let result = {
       cmd: '',
@@ -452,6 +511,7 @@ class StatusClass extends MFWCommandPrototypeClass {
       child.unref();
     }
   }
+
   /**
    * Stop service by name.
    *
@@ -493,6 +553,7 @@ class StatusClass extends MFWCommandPrototypeClass {
     child.on('exit', (code) => {
       if (code == 0) {
         this.message('ok', 'Stop signal sent to ' + serviceName + ':' + name);
+        this.emit('stopped', serviceName, status);
         return;
       }
       console.log('Child exited with code ' + code);
@@ -559,5 +620,24 @@ module.exports.commander = function(commander) {
       }
       status.stopService(service);
     });
+    commander.command('restart [service]')
+      .description('Restart microservice(s).'
+        + ' Use "all" to install all services saved in package.json.')
+      .option('-r, --root <dir>', 'Optionally root directory')
+      .action(function(service, options) {
+        let settings = {
+          RootDirectory: CommonFunc.getRoot(options)
+        };
+        let status = new StatusClass(settings);
+
+        if (!service) {
+          service = 'all';
+        }
+
+        if (service == 'all') {
+          return status.restartAllServices();
+        }
+        status.restartService(service);
+      });
 
 }
