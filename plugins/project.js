@@ -278,6 +278,22 @@ class ProjectClass extends MFWCommandPrototypeClass {
       resultStatus = false;
     }
 
+    // Check kill.js script.
+    try {
+      stat = fs.statSync(directory + '/kill.js');
+      if (stat.isFile()) {
+        let content = fs.readFileSync(directory + '/kill.js').toString();
+        if (content.indexOf('SIGHUP') !== -1 ) {
+          this.message('warning', 'SIGHUP detected in kill.js.'
+            + ' Replacing it with SIGINT.');
+          content = content.replace(/SIGHUP/g, 'SIGINT');
+          fs.writeFileSync(directory + '/kill.js', content);
+        }
+      }
+    } catch (e) {
+      // nothing to do.
+    }
+
     // Check if package.json exists.
     try {
       stat = fs.statSync(directory + '/package.json');
