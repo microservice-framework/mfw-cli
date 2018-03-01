@@ -193,7 +193,7 @@ class StatusClass extends MFWCommandPrototypeClass {
         for (var name in result) {
           this.processPidUsage(result[name], name, module);
         }
-      }catch(e) {
+      } catch (e) {
         return this.message('error',  e.message);
       }
     });
@@ -416,7 +416,7 @@ class StatusClass extends MFWCommandPrototypeClass {
           env[item.name] = item.value;
         }
       }
-    } catch(e) {
+    } catch (e) {
       return this.message('error', e.message);
     }
 
@@ -446,7 +446,7 @@ class StatusClass extends MFWCommandPrototypeClass {
       });
       if (child.exitCode) {
         this.message('error', 'Died with code' + child.exitCode);
-      }else {
+      } else {
         this.message('ok', serviceName + ':' + name + ' started');
       }
       child.unref();
@@ -478,7 +478,7 @@ class StatusClass extends MFWCommandPrototypeClass {
           env[item.name] = item.value;
         }
       }
-    } catch(e) {
+    } catch (e) {
       return this.message('error', e.message);
     }
     this.progressMessage('stopping ' + serviceName + ':' + name);

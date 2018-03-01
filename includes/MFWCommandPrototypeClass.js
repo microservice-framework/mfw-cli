@@ -68,7 +68,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
     try {
       currentEnv = fs.readFileSync(this.RootDirectory + '/.env') + '';
       currentEnv = currentEnv.trim();
-    } catch(e) {
+    } catch (e) {
       currentEnv = '';
     }
     return currentEnv;
@@ -159,10 +159,10 @@ class MFWCommandPrototypeClass extends EventEmitter {
           this.message('error', this.RootDirectory + '/.env is not a file');
           return false;
         }
-      } catch(e) {
+      } catch (e) {
         // no .env file. All is good.
       }
-    } catch(e) {
+    } catch (e) {
       this.message('ok', 'Creating ' + this.RootDirectory);
       fs.ensureDirSync(this.RootDirectory);
     }
@@ -174,7 +174,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
         this.message('error', this.RootDirectory + '/services/ is not a directory');
         return false;
       }
-    } catch(e) {
+    } catch (e) {
       this.message('ok', 'Creating ' + this.RootDirectory + '/services/');
       fs.ensureDirSync(this.RootDirectory + '/services/');
     }
@@ -186,7 +186,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
         this.message('error', this.RootDirectory + '/configs/ is not a directory');
         return false;
       }
-    } catch(e) {
+    } catch (e) {
       this.message('ok', 'Creating ' + this.RootDirectory + '/configs/');
       fs.ensureDirSync(this.RootDirectory + '/configs/');
     }
@@ -198,7 +198,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
         this.message('error', this.RootDirectory + '/logs/ is not a directory');
         return false;
       }
-    } catch(e) {
+    } catch (e) {
       this.message('ok', 'Creating ' + this.RootDirectory + '/logs/');
       fs.ensureDirSync(this.RootDirectory + '/logs/');
     }
@@ -210,7 +210,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
         this.message('error', this.RootDirectory + '/pids/ is not a directory');
         return false;
       }
-    } catch(e) {
+    } catch (e) {
       this.message('ok', 'Creating ' + this.RootDirectory + '/pids/');
       fs.ensureDirSync(this.RootDirectory + '/pids/');
     }
@@ -227,7 +227,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
         this.message('error', this.getPackageJSONPath() + ' exists already.');
         return false;
 
-      } catch(e) {
+      } catch (e) {
         // no [env.]package.json file. All is good.
       }
     }
@@ -249,7 +249,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
         this.message('error', 'Root dir: ' + this.RootDirectory + ' is not a directory');
         resultStatus = false;
       }
-    } catch(e) {
+    } catch (e) {
       this.message('error', 'Root dir: ' + this.RootDirectory + ' does not exist');
       resultStatus = false;
     }
@@ -261,7 +261,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
         this.message('error', 'Root dir: ' + this.RootDirectory + '/services/ is not a directory');
         resultStatus = false;
       }
-    } catch(e) {
+    } catch (e) {
       this.message('error', 'Root dir: ' + this.RootDirectory + '/services/ does not exist');
       resultStatus = false;
     }
@@ -273,7 +273,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
         this.message('error', 'Root dir: ' + this.RootDirectory + '/configs/ is not a directory');
         resultStatus = false;
       }
-    } catch(e) {
+    } catch (e) {
       this.message('error', 'Root dir: ' + this.RootDirectory + '/configs/ does not exist');
       resultStatus = false;
     }
@@ -285,7 +285,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
         this.message('error', 'Root dir: ' + this.RootDirectory + '/logs/ is not a directory');
         resultStatus = false;
       }
-    } catch(e) {
+    } catch (e) {
       this.message('error', 'Root dir: ' + this.RootDirectory + '/logs/ does not exist');
       resultStatus = false;
     }
@@ -297,7 +297,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
         this.message('error', 'Root dir: ' + this.RootDirectory + '/pids/ is not a directory');
         resultStatus = false;
       }
-    } catch(e) {
+    } catch (e) {
       this.message('error', 'Root dir: ' + this.RootDirectory + '/pids/ does not exist');
       resultStatus = false;
     }
@@ -317,7 +317,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
           resultStatus = false;
         }
       }
-    } catch(e) {
+    } catch (e) {
       this.message('error', this.getPackageJSONPath() + ' does not exist');
       resultStatus = false;
     }

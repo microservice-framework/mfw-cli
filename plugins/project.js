@@ -64,18 +64,18 @@ class ProjectClass extends MFWCommandPrototypeClass {
                     self.message('ok', packageJSONFile + '  copied from package.json.');
                     self.emit('isPackageJSON', null, packageJSONFile);
                   });
-              } catch(e) {
+              } catch (e) {
                 return self.emit('isPackageJSON', e, packageJSONFile);
               }
             }
-          }catch(e) {
+          } catch (e) {
             // no default package. Continue
           }
         }
         try {
           var packageSchemaFile = path.resolve(__dirname + '/../templates/package.schema.json');
           var schema = JSON.parse(fs.readFileSync(packageSchemaFile));
-        } catch(e) {
+        } catch (e) {
           return self.emit('isPackageJSON', e, packageJSONFile);
         }
         prompt.start();
@@ -101,7 +101,7 @@ class ProjectClass extends MFWCommandPrototypeClass {
     try {
       fs.removeSync(this.RootDirectory + '/.services.' + this.currentEnv);
       fs.renameSync(servicesDir, this.RootDirectory + '/.services.' + this.currentEnv);
-    } catch(e) {
+    } catch (e) {
       console.log(e);
     }
 
@@ -117,7 +117,7 @@ class ProjectClass extends MFWCommandPrototypeClass {
         return this.message('ok', 'switched to: default');
       }
       this.message('ok', 'switched to: ' + this.envName);
-    } catch(e) {
+    } catch (e) {
       this.message('warning', e);
       fs.mkdir(servicesDir, (err) => {
         if (err) {
@@ -273,7 +273,7 @@ class ProjectClass extends MFWCommandPrototypeClass {
         this.message('error', directory + ' is not a directory');
         resultStatus = false;
       }
-    } catch(e) {
+    } catch (e) {
       this.message('error', directory + ' does not exists');
       resultStatus = false;
     }
@@ -328,7 +328,7 @@ class ProjectClass extends MFWCommandPrototypeClass {
           resultStatus = false;
         }
       }
-    } catch(e) {
+    } catch (e) {
       console.log(e);
       this.message('error', directory + '/package.json does not exists');
       resultStatus = false;
@@ -373,7 +373,7 @@ class ProjectClass extends MFWCommandPrototypeClass {
       try {
         var moduleSchemaFile = path.resolve(envSchema);
         var schema = JSON.parse(fs.readFileSync(moduleSchemaFile));
-      } catch(e) {
+      } catch (e) {
         return this.message('error', e.message);
       }
 
@@ -836,7 +836,7 @@ module.exports.commander = function(commander) {
           MFWCli.error('You could not install service into itself :)');
           return;
         }
-      } catch(e) {}
+      } catch (e) {}
       MFWCli.installService(service, options.save, options.default);
     });
 
