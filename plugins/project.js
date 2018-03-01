@@ -109,12 +109,12 @@ class ProjectClass extends MFWCommandPrototypeClass {
     try {
       let stats = fs.statSync(newEnvService);
       if (!stats.isDirectory()) {
-        return self.message('error', newEnvService + 'is not directory. Something is wrong here.');
+        return this.message('error', newEnvService + 'is not directory. Something is wrong here.');
       }
       fs.renameSync(newEnvService, servicesDir);
       fs.writeFileSync(this.RootDirectory + '/.env', this.envName);
       if (this.envName == '') {
-        return self.message('ok', 'switched to: default');
+        return this.message('ok', 'switched to: default');
       }
       this.message('ok', 'switched to: ' + this.envName);
     } catch(e) {
@@ -903,5 +903,28 @@ module.exports.commander = function(commander) {
       };
       let MFWCli = new ProjectClass(settings);
       MFWCli.fixProject();
+    });
+  // Deprecated. Will be removed in v2.
+  commander.command('setup [dir]')
+  .description('setup directory')
+    .option('-e, --env <name>', 'Environment. Helps to separate production, stage, devel.')
+    .action(function(rootDIR, options) {
+      if (!rootDIR) {
+        rootDIR = process.cwd();
+      }
+      rootDIR = path.resolve(rootDIR);
+      let settings = {
+        RootDirectory: rootDIR
+      };
+      let MFWCli = new ProjectClass(settings);
+      let envName = options.env
+      if(!envName) {
+        envName = '';
+      }
+      if (envName == 'default') {
+        envName = '';
+      }
+
+      return MFWCli.envSet(envName);
     });
 }
