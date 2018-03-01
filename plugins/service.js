@@ -360,22 +360,22 @@ class StatusClass extends MFWCommandPrototypeClass {
       args: [],
       env: []
     }
-    let cmdLine = cmdline.split(" ");
-    if(cmdLine.length == 0) {
+    let cmdLine = cmdline.split(' ');
+    if (cmdLine.length == 0) {
       throw new Error('Empty command line');
     }
     let i = 0;
     let envCatched = false;
-    while(i < cmdLine.length){
-      if(cmdLine[i] == '') {
+    while (i < cmdLine.length) {
+      if (cmdLine[i] == '') {
         i++;
         continue;
       }
       // Special hack for WIN.Should be depricated in v2.
-      if(cmdLine[i].indexOf('=') != -1 && !envCatched) {
+      if (cmdLine[i].indexOf('=') != -1 && !envCatched) {
         envCatched = true;
         // this is env var
-        let envLine = cmdLine[i].split("=", 2);
+        let envLine = cmdLine[i].split('=', 2);
         result.env.push({
           name: envLine[0],
           value: envLine[1]
@@ -406,13 +406,13 @@ class StatusClass extends MFWCommandPrototypeClass {
     env.npm_package_version = status.package.version;
     env.npm_package_description = status.package.description;
 
-    let cmdLine = status.package.scripts[status.start].split(" ");
+    let cmdLine = status.package.scripts[status.start].split(' ');
     let name = status.start;
 
     try {
       var preparedCMD = this.prepareCmdForSpawn(status.package.scripts[status.start]);
-      if(preparedCMD.env.length > 0) {
-        for(let item of preparedCMD.env) {
+      if (preparedCMD.env.length > 0) {
+        for (let item of preparedCMD.env) {
           env[item.name] = item.value;
         }
       }
@@ -468,13 +468,13 @@ class StatusClass extends MFWCommandPrototypeClass {
     env.npm_package_version = status.package.version;
     env.npm_package_description = status.package.description;
 
-    let cmdLine = status.package.scripts[status.start].split(" ");
+    let cmdLine = status.package.scripts[status.start].split(' ');
     let name = status.stop;
 
     try {
       var preparedCMD = this.prepareCmdForSpawn(status.package.scripts[status.stop]);
-      if(preparedCMD.env.length > 0) {
-        for(let item of preparedCMD.env) {
+      if (preparedCMD.env.length > 0) {
+        for (let item of preparedCMD.env) {
           env[item.name] = item.value;
         }
       }

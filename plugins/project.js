@@ -918,7 +918,7 @@ module.exports.commander = function(commander) {
       };
       let MFWCli = new ProjectClass(settings);
       let envName = options.env
-      if(!envName) {
+      if (!envName) {
         envName = '';
       }
       if (envName == 'default') {
