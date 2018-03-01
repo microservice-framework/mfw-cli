@@ -1,0 +1,6 @@
+{
+  "name": "test",
+  "version": "1.0.0",
+  "mongo_url": "mongodb://localhost:27017/mfw",
+  "mongo_options": ""
+}

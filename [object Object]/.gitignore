@@ -1,0 +1,17 @@
+# Logs
+logs/*
+*.log
+
+# Runtime data
+pids/*
+*.pid
+*.seed
+
+# Services
+services/*
+
+
+# .env file with env name
+.env
+
+.services
