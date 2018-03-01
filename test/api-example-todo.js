@@ -112,7 +112,7 @@ describe('API-TODO-EXAMPLE',function(){
     });
   });
 
-  it('Clean TMP dris', function(done){
+  it('Clean TMP dirs', function(done){
     if (!debug){ 
       fs.emptyDirSync(tmpDir.name);
       tmpDir.removeCallback();
