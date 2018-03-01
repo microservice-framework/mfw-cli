@@ -215,7 +215,7 @@ class MFWCommandPrototypeClass extends EventEmitter {
       fs.ensureDirSync(this.RootDirectory + '/pids/');
     }
 
-    if(fixMode !== true) {
+    if (fixMode !== true) {
       // Check if package.json exists.
       try {
         stat = fs.statSync(this.getPackageJSONPath());

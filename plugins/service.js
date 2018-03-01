@@ -275,7 +275,7 @@ class StatusClass extends MFWCommandPrototypeClass {
       if (!status.error) {
         return this.message('error', status.name + ' already running.');
       }
-      this.execStartService(serviceName, status.start);
+      this.execStartService(serviceName, status);
     });
 
     this.statusService(serviceName);
@@ -296,7 +296,7 @@ class StatusClass extends MFWCommandPrototypeClass {
       if (!status.error) {
         return this.message('error', status.name + ' already running.');
       }
-      this.execStartService(status.service.short, status.start);
+      this.execStartService(status.service.short, status);
     });
 
     let packageJSON = this.getPackageJSON();
@@ -323,7 +323,7 @@ class StatusClass extends MFWCommandPrototypeClass {
       if (status.error) {
         return this.message('error', status.name + ' ' + status.error);
       }
-      this.execStopService(serviceName, status.stop);
+      this.execStopService(serviceName, status);
     });
 
     this.statusService(serviceName);
@@ -343,7 +343,7 @@ class StatusClass extends MFWCommandPrototypeClass {
       if (status.error) {
         return this.message('error', status.name + ' ' + status.error);
       }
-      this.execStopService(status.service.short, status.stop);
+      this.execStopService(status.service.short, status);
     });
 
     let packageJSON = this.getPackageJSON();
@@ -354,25 +354,78 @@ class StatusClass extends MFWCommandPrototypeClass {
     }
   }
 
+  prepareCmdForSpawn(cmdline) {
+    let result = {
+      cmd: '',
+      args: [],
+      env: []
+    }
+    let cmdLine = cmdline.split(" ");
+    if(cmdLine.length == 0) {
+      throw new Error('Empty command line');
+    }
+    let i = 0;
+    let envCatched = false;
+    while(i < cmdLine.length){
+      if(cmdLine[i] == '') {
+        i++;
+        continue;
+      }
+      // Special hack for WIN.Should be depricated in v2.
+      if(cmdLine[i].indexOf('=') != -1 && !envCatched) {
+        envCatched = true;
+        // this is env var
+        let envLine = cmdLine[i].split("=", 2);
+        result.env.push({
+          name: envLine[0],
+          value: envLine[1]
+        });
+        i++
+        continue;
+      }
+      result.args.push(cmdLine[i]);
+      i++;
+    }
+    result.cmd = result.args.shift();
+    return result;
+  }
+
   /**
    * Start service by name.
    *
    * @param {string} serviceName - service name.
    */
-  execStartService(serviceName, name) {
+  execStartService(serviceName, status) {
     let serviceDir = this.RootDirectory + '/services/' + serviceName;
     let packageJSON = this.getPackageJSON();
     let env = process.env;
     env.mfw_package_name = packageJSON.name;
     env.mfw_package_version = packageJSON.version;
     env.mfw_package_description = packageJSON.description;
+    env.npm_package_name = status.package.name;
+    env.npm_package_version = status.package.version;
+    env.npm_package_description = status.package.description;
+
+    let cmdLine = status.package.scripts[status.start].split(" ");
+    let name = status.start;
+
+    try {
+      var preparedCMD = this.prepareCmdForSpawn(status.package.scripts[status.start]);
+      if(preparedCMD.env.length > 0) {
+        for(let item of preparedCMD.env) {
+          env[item.name] = item.value;
+        }
+      }
+    } catch(e) {
+      return this.message('error', e.message);
+    }
 
     if (this.devel) {
       this.progressMessage('starting ' + serviceName + ':' + name + ' in devel mode');
       env.DEBUG = '*';
       env.DEVEL = true;
 
-      let child = spawn('npm', ['run', name, '-s' ], {
+      let child = spawn(preparedCMD.cmd, preparedCMD.args, {
         cwd: serviceDir,
         stdio: 'inherit',
         env: env
@@ -385,7 +438,7 @@ class StatusClass extends MFWCommandPrototypeClass {
       });
     } else {
       this.progressMessage('starting '  + serviceName + ':' + name);
-      let child = spawn('npm', ['run', name ], {
+      let child = spawn(preparedCMD.cmd, preparedCMD.args, {
         cwd: serviceDir,
         env: env,
         detached: true,
@@ -404,10 +457,36 @@ class StatusClass extends MFWCommandPrototypeClass {
    *
    * @param {string} serviceName - service name.
    */
-  execStopService(serviceName, name) {
+  execStopService(serviceName, status) {
     let serviceDir = this.RootDirectory + '/services/' + serviceName;
+    let packageJSON = this.getPackageJSON();
+    let env = process.env;
+    env.mfw_package_name = packageJSON.name;
+    env.mfw_package_version = packageJSON.version;
+    env.mfw_package_description = packageJSON.description;
+    env.npm_package_name = status.package.name;
+    env.npm_package_version = status.package.version;
+    env.npm_package_description = status.package.description;
+
+    let cmdLine = status.package.scripts[status.start].split(" ");
+    let name = status.stop;
+
+    try {
+      var preparedCMD = this.prepareCmdForSpawn(status.package.scripts[status.stop]);
+      if(preparedCMD.env.length > 0) {
+        for(let item of preparedCMD.env) {
+          env[item.name] = item.value;
+        }
+      }
+    } catch(e) {
+      return this.message('error', e.message);
+    }
     this.progressMessage('stopping ' + serviceName + ':' + name);
-    let child = spawn('npm', ['run', name, '-s' ], {cwd: serviceDir, stdio: 'inherit'});
+    let child = spawn(preparedCMD.cmd, preparedCMD.args, {
+      cwd: serviceDir,
+      stdio: 'inherit',
+      env: env
+    });
     child.on('error', (err) => {
       console.log(err);
     });
