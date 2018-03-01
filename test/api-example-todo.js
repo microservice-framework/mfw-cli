@@ -4,13 +4,20 @@ const tmp = require('tmp');
 const exec = require('child_process').exec;
 const fs = require('fs-extra');
 
+var debug = false;
+if (process.env.DEBUG) {
+  debug = true;
+}
+
 describe('API-TODO-EXAMPLE',function(){
   var tmpDir;
   var rootDir;
   it('git clone', function(done){
     tmpDir = tmp.dirSync();
     rootDir = process.cwd();
-    console.log('TMP DIR for test is: ', tmpDir.name);
+    if (debug){
+      console.log('TMP DIR for test is: ', tmpDir.name);
+    }
 
     exec( 'git clone https://github.com/microservice-framework/api-todo-example.git',
     {cwd: tmpDir.name},
@@ -104,5 +111,15 @@ describe('API-TODO-EXAMPLE',function(){
       done();
     });
   });
+
+  it('Clean TMP dris', function(done){
+    if (!debug){ 
+      fs.emptyDirSync(tmpDir.name);
+      tmpDir.removeCallback();
+    } else {
+      console.log('Dont forget to remove tmp dir: ' + tmpDir.name + "\n");
+    }
+    done();
+  })
 
 })

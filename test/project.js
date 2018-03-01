@@ -5,18 +5,18 @@ const spawn = require('cross-spawn');
 const fs = require('fs-extra');
 
 var debug = false;
-if(process.env.DEBUG) {
+if (process.env.DEBUG) {
   debug = true;
 }
 
 const execMFW = function(cmd, args, cwd, callback) {
   let isEnd = false;
   let timeout = false;
-  if(!callback) {
+  if (!callback) {
     callback = cwd;
     cwd = process.cwd();
   }
-  if(debug){
+  if (debug){
     console.log('exec' , cmd, args, cwd);
   }
   let childInit = spawn(cmd, args, { cwd: cwd });
@@ -24,11 +24,11 @@ const execMFW = function(cmd, args, cwd, callback) {
   childInit.stdout.on('data', function (data) {
     let incoming = data.toString();
     output = output + incoming;
-    if(debug){
+    if (debug){
       console.log('>>> ' + incoming);
     }
-    if(!isEnd) {
-      if(timeout) {
+    if (!isEnd) {
+      if (timeout) {
         clearTimeout(timeout);
       }
       timeout = setTimeout(()=> {
@@ -36,11 +36,11 @@ const execMFW = function(cmd, args, cwd, callback) {
         childInit.stdin.end();
       }, 1000);
 
-      if(incoming.indexOf('name:') !== -1) {
+      if (incoming.indexOf('name:') !== -1) {
         childInit.stdin.write("test\r\n");
         return;
       }
-      if(incoming.indexOf('ROUTER SECRET') !== -1) {
+      if (incoming.indexOf('ROUTER SECRET') !== -1) {
         childInit.stdin.write("test\r\n");
         return;
       }
@@ -65,7 +65,7 @@ describe('Project commands',function(){
 
   it('init - no options', function(done){
     tmpCWD = tmp.dirSync();
-    if(debug){
+    if (debug){
       console.log('\tTMP: ' + tmpCWD.name);
     }
     var rootDir = process.cwd();
@@ -78,7 +78,7 @@ describe('Project commands',function(){
 
   it('init [dir]', function(done){
     tmpRootOption = tmp.dirSync();
-    if(debug){
+    if (debug){
       console.log('\tTMP: ' + tmpRootOption.name);
     }
     var rootDir = process.cwd();
@@ -205,8 +205,91 @@ describe('Project commands',function(){
   
   });
 
-  it('Clean TMP dris', function(done){
-    if(!debug){ 
+  it('uninstall example-todo', function(done){
+    var rootDir = process.cwd();
+
+    execMFW(rootDir + '/bin/mfw', [
+      "uninstall",
+      "example-todo",
+      "-s",
+      "--json"], tmpCWD.name, (code, output) => {
+      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      done();
+    });
+
+  });
+
+  it('uninstall example-todo -r [root]', function(done){
+    var rootDir = process.cwd();
+
+    execMFW(rootDir + '/bin/mfw', [
+      "uninstall",
+      "example-todo",
+      "-s",
+      "-r",
+      tmpRootOption.name, "--json"], (code, output) => {
+      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      done();
+    });
+  
+  });
+
+  it('env test', function(done){
+    var rootDir = process.cwd();
+
+    execMFW(rootDir + '/bin/mfw', [
+      "env",
+      "test",
+      "--json"], tmpCWD.name, (code, output) => {
+      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      done();
+    });
+
+  });
+
+  it('env test -r [root]', function(done){
+    var rootDir = process.cwd();
+
+    execMFW(rootDir + '/bin/mfw', [
+      "env",
+      "test",
+      "-r",
+      tmpRootOption.name, "--json"], (code, output) => {
+      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      done();
+    });
+  
+  });
+
+  it('env default', function(done){
+    var rootDir = process.cwd();
+
+    execMFW(rootDir + '/bin/mfw', [
+      "env",
+      "default",
+      "--json"], tmpCWD.name, (code, output) => {
+      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      done();
+    });
+
+  });
+
+  it('env default -r [root]', function(done){
+    var rootDir = process.cwd();
+
+    execMFW(rootDir + '/bin/mfw', [
+      "env",
+      "default",
+      "-r",
+      tmpRootOption.name, "--json"], (code, output) => {
+      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      done();
+    });
+  
+  });
+
+  it('Clean TMP dirs', function(done){
+    if (!debug){ 
       fs.emptyDirSync(tmpRootOption.name);
       tmpRootOption.removeCallback();
       fs.emptyDirSync(tmpCWD.name);

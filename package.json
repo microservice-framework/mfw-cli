@@ -7,7 +7,7 @@
     "bin": "./bin"
   },
   "scripts": {
-    "test": "node_modules/.bin/mocha --timeout 15000",
+    "test": "node_modules/.bin/mocha --timeout 35000",
     "cs": "eslint --fix bin/* includes/*.js plugins/*.js test/*.js"
   },
   "repository": {
