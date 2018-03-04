@@ -38,6 +38,30 @@ class ProjectClass extends MFWCommandPrototypeClass {
   }
 
   /**
+   * Prepare project directory based on package.json.
+   * deprecated. Replaced by mfw install
+   */
+  setupProject() {
+    if (!this.validateRootDirForInit(true)) {
+      return this.message('error', 'Setup Failed');
+    }
+    this.on('isPackageJSON', (err, packageJSONPath) => {
+      if (err) {
+        return this.message('error', e.message);
+      }
+      this.message('ok', 'Setup completed');
+      this.performEnvSwitch();
+    });
+    let packageJSONFile = this.getPackageJSONPath();
+    fs.stat(packageJSONFile, (err, stats) => {
+      if (err) {
+        return this.message('error', 'No package.json found');
+      }
+      this.emit('isPackageJSON', null, packageJSONFile);
+    });
+  }
+
+  /**
    * Generate Package (Project) JSON. {env.}project.json
    * Emits isPackageJSON.
    */
@@ -941,6 +965,6 @@ module.exports.commander = function(commander) {
         envName = '';
       }
 
-      return MFWCli.envSet(envName);
+      return MFWCli.setupProject(envName);
     });
 }
