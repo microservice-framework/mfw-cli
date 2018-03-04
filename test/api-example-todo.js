@@ -75,7 +75,7 @@ describe('API-TODO-EXAMPLE',function(){
       "clone",
       "https://github.com/microservice-framework/api-todo-example.git"],
       tmpDir.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "git clone exited with code " + code + "\n" + output);
       done();
     });
   });

@@ -62,6 +62,31 @@ var tmpRootOption = ''
 var tmpCWD = ''
 
 describe('Project commands',function(){
+  it('setup [dir]', function(done){
+    var tmpRootSetup = tmp.dirSync();
+    if (debug){
+      console.log('\tTMP: ' + tmpRootSetup.name);
+    }
+    var rootDir = process.cwd();
+
+    execMFW('git', [
+      "clone",
+      "https://github.com/microservice-framework/api-todo-example.git"],
+      tmpRootSetup.name, (code, output) => {
+      expect(code).to.equal(0, "git clone  exited with code " + code + "\n" + output);
+      execMFW(rootDir + '/bin/mfw', ["setup", tmpRootSetup.name, "--json"], (code, output) => {
+        expect(code).to.equal(0, "setup exited with code " + code + "\n" + output);
+        if (!debug){ 
+          fs.emptyDirSync(tmpRootSetup.name);
+          tmpRootSetup.removeCallback();
+        } else {
+          console.log('Dont forget to remove tmp dir: ' + tmpRootSetup.name + "\n");
+          console.log('Dont forget to remove tmp dir: ' + tmpRootSetup.name + "\n");
+        }
+        done();
+      });
+    });
+  });
 
   it('init - no options', function(done){
     tmpCWD = tmp.dirSync();
