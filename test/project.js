@@ -74,7 +74,11 @@ describe('Project commands',function(){
       "https://github.com/microservice-framework/api-todo-example.git"],
       tmpRootSetup.name, (code, output) => {
       expect(code).to.equal(0, "git clone  exited with code " + code + "\n" + output);
-      execMFW(rootDir + '/bin/mfw', ["setup", tmpRootSetup.name + '/api-todo-example/', "--json"], (code, output) => {
+      execMFW(rootDir + '/bin/mfw', [
+        "setup",
+        tmpRootSetup.name + '/api-todo-example/',
+        "--json"],
+        (code, output) => {
         expect(code).to.equal(0, "setup exited with code " + code + "\n" + output);
         if (!debug){ 
           fs.emptyDirSync(tmpRootSetup.name);
