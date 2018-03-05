@@ -1,5 +1,11 @@
 # mfw-cli
-Console utility for [@microservice-framework](https://github.com/microservice-framework). The Microservice-Framework allows you to turn packages into API endpoints. You can query them using CRUD... Now, with **Search**.
+
+[![Gitter](https://img.shields.io/gitter/room/microservice-framework/chat.svg?style=flat-square)](https://gitter.im/microservice-framework/chat)
+[![npm](https://img.shields.io/npm/dt/@microservice-framework/mfw-cli.svg?style=flat-square)](https://www.npmjs.com/~microservice-framework)
+[![microservice-frame.work](https://img.shields.io/badge/online%20docs-200-green.svg?style=flat-square)](http://microservice-frame.work)
+
+
+Console utility for [@microservice-framework](https://github.com/microservice-framework).
 
 # Installation
 
@@ -23,7 +29,7 @@ Once your project has been configured, the next step is to add services. Each ds
 
 A `[service]` can be a...
   - npm package name.
-    - Downloaded from the [npm](https://www.npmjs.com) registry.
+    - Downloaded from the [npm](https://www.npmjs.com) registry. See 
   - Repository, like: git@github.com:owner/repo
     - Downloaded from git.
   - Local path to a directory containing a package.
@@ -55,7 +61,7 @@ If you'd like to uninstall a package, simply:
 Example:
 
 ```
-# mfw uninstall @microservice-framework/microservice-router --save
+# mfw uninstall microservice-router --save
 ```
 
 
@@ -73,7 +79,7 @@ If you need to update the service to coincide with changes to the root package, 
 Example:
 
 ```
-# mfw update @microservice-framework/microservice-router
+# mfw update microservice-router
 ```
 
 Updating will download the latest `microservice-router`, overwriting the old package.
@@ -132,17 +138,25 @@ You can stop them, too!
 
 If `all` provided, all services will be stopped.
 
+## Restart service
+
+You can restart service(s) as well
+
+```
+# mfw restart [service]
+```
+
+If `all` provided, all services will be restarted.
+
+
 ## Status service
 
 You can display the status for specified services or for all service.
 
 ```
-## Specific service
 # mfw status <service>
-
-## All services
-# mfw status
 ```
+![status](https://user-images.githubusercontent.com/5018896/36957629-aa8187b2-2003-11e8-8e33-6a42f1b7af1d.png)
 
 The status report will include CPU, MEMORY usage and up/down + version and pid information
 
@@ -157,3 +171,9 @@ The status report will include CPU, MEMORY usage and up/down + version and pid i
 ## CHANGELOG
 
 - `1.2.6` - Windows compatibility bugfix for install and update.
+- `1.3.0`
+  - fixed issue with service stop on WIN platform
+  - added restart command
+  - fixed setup on WIN platform
+  - added `--json` option to get json output for all commands
+  - tests are covering all commands
