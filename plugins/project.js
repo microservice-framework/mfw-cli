@@ -55,7 +55,7 @@ class ProjectClass extends MFWCommandPrototypeClass {
     let packageJSONFile = this.getPackageJSONPath();
     fs.stat(packageJSONFile, (err, stats) => {
       if (err) {
-        return this.message('error', 'No package.json found');
+        return this.generatePackageJSON();
       }
       this.emit('isPackageJSON', null, packageJSONFile);
     });
