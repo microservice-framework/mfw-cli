@@ -87,7 +87,7 @@ describe('API-TODO-EXAMPLE',function(){
     execMFW(rootDir + '/bin/mfw', [
       "install",
       "--json"], tmpDir.name + '/api-todo-example', (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "install exited with code " + code + "\n" + output);
       try {
         var json = JSON.parse(output);
       } catch (e) {
@@ -110,7 +110,7 @@ describe('API-TODO-EXAMPLE',function(){
     execMFW(rootDir + '/bin/mfw', [
       "start",
       "--json"], tmpDir.name + '/api-todo-example', (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "start exited with code " + code + "\n" + output);
       try {
         var json = JSON.parse(output);
       } catch (e) {
@@ -138,18 +138,12 @@ describe('API-TODO-EXAMPLE',function(){
       "--json"], tmpDir.name + '/api-todo-example', (code, output) => {
       expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
       try {
-        var json = JSON.parse(output);
+        var answer = JSON.parse(output);
       } catch (e) {
-        console.log(e);
-        console.log('json', output);
+        expect(e).to.equal(null, "JSON PARSE ERROR \n" + e + "\n" + output);
       }
-      let message = ''
-      for (let item of json.status) {
-        if (item.error) {
-          message = message + item.name + ': ' + item.error + "\n";
-        }
-      }
-      expect(message).to.equal('', message);
+      expect(answer.error.length).to.equal(0, "status exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "status exited with code " + code + "\n" + output);
       done();
     });
   });
@@ -160,7 +154,7 @@ describe('API-TODO-EXAMPLE',function(){
     execMFW(rootDir + '/bin/mfw', [
       "stop",
       "--json"], tmpDir.name + '/api-todo-example', (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "stop exited with code " + code + "\n" + output);
       try {
         var json = JSON.parse(output);
       } catch (e) {
