@@ -1,12 +1,13 @@
 const expect  = require("chai").expect;
 const tmp = require('tmp');
 const fs = require('fs-extra');
-const execMFW = require('./tools.js').execMFW;
 
 var debug = false;
 if (process.env.DEBUG) {
   debug = true;
 }
+
+const execMFW = require('./tools.js').execMFW(debug);
 
 var tmpRootOption = ''
 var tmpCWD = ''

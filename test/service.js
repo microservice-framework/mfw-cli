@@ -1,12 +1,13 @@
 const expect  = require("chai").expect;
 const tmp = require('tmp');
 const fs = require('fs-extra');
-const execMFW = require('./tools.js').execMFW;
 
 var debug = false;
 if (process.env.DEBUG) {
   debug = true;
 }
+
+const execMFW = require('./tools.js').execMFW(debug);
 
 var tmpCWD = ''
 
@@ -48,8 +49,10 @@ describe('Status commands',function(){
       "start",
       "example-todo",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "start exited with code " + code + "\n" + output);
-      done();
+      setTimeout(()=> {
+        expect(code).to.equal(0, "start exited with code " + code + "\n" + output);
+        done();
+      }, 1000);
     });
 
   });
@@ -94,8 +97,10 @@ describe('Status commands',function(){
       "example-todo",
       "-r",
       tmpCWD.name, "--json"], (code, output) => {
-      expect(code).to.equal(0, "start exited with code " + code + "\n" + output);
-      done();
+      setTimeout(()=> {
+        expect(code).to.equal(0, "start exited with code " + code + "\n" + output);
+        done();
+      }, 1000);
     });
   
   });
@@ -140,8 +145,10 @@ describe('Status commands',function(){
     execMFW(rootDir + '/bin/mfw', [
       "start",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "start exited with code " + code + "\n" + output);
-      done();
+      setTimeout(()=> {
+        expect(code).to.equal(0, "start exited with code " + code + "\n" + output);
+        done();
+      }, 1000);
     });
 
   });
@@ -184,8 +191,10 @@ describe('Status commands',function(){
       "all",
       "-r",
       tmpCWD.name, "--json"], (code, output) => {
-      expect(code).to.equal(0, "start exited with code " + code + "\n" + output);
-      done();
+      setTimeout(()=> {
+        expect(code).to.equal(0, "start exited with code " + code + "\n" + output);
+        done();
+      }, 1000);
     });
   
   });
