@@ -14,6 +14,23 @@ class ClientClass extends MFWCommandPrototypeClass {
     if (settings.accesstoken) {
       this.accesstoken = settings.accesstoken;
     }
+    this.messages = {
+      ok: [],
+      error: [],
+      warning: [],
+      status: [],
+      unknown: []
+    }
+  }
+
+  /**
+   * Print Messages. Executed process.on('exit').
+   */
+  printMessages() {
+    if (this.messages.error.length == 0) {
+      return console.log(this.messages.ok[0]);
+    }
+    console.log(JSON.stringify(this.messages, null, 2));
   }
   /**
    * Process POST.
@@ -246,7 +263,7 @@ class ClientClass extends MFWCommandPrototypeClass {
       }
       return this.message('error', message);
     }
-    this.message('ok', 'Answer: \n' + JSON.stringify(handlerResponse, null, 2));
+    return this.message('ok', JSON.stringify(handlerResponse, null, 2));
   }
 
 }

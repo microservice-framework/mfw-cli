@@ -1,63 +1,13 @@
 const expect  = require("chai").expect;
 const tmp = require('tmp');
-const exec = require('child_process').exec;
-const spawn = require('cross-spawn');
 const fs = require('fs-extra');
+const execMFW = require('./tools.js').execMFW;
 
 var debug = false;
 if (process.env.DEBUG) {
   debug = true;
 }
 
-const execMFW = function(cmd, args, cwd, callback) {
-  let isEnd = false;
-  let timeout = false;
-  if (!callback) {
-    callback = cwd;
-    cwd = process.cwd();
-  }
-  if (debug){
-    console.log('exec' , cmd, args, cwd);
-  }
-  let childInit = spawn(cmd, args, { cwd: cwd });
-  var output = '';
-  childInit.stdout.on('data', function (data) {
-    let incoming = data.toString();
-    output = output + incoming;
-    if (debug){
-      console.log('>>> ' + incoming);
-    }
-    if (!isEnd) {
-      if (timeout) {
-        clearTimeout(timeout);
-      }
-      timeout = setTimeout(()=> {
-        isEnd = true;
-        childInit.stdin.end();
-      }, 1000);
-
-      if (incoming.indexOf('name:') !== -1) {
-        childInit.stdin.write("test\r\n");
-        return;
-      }
-      if (incoming.indexOf('ROUTER SECRET') !== -1) {
-        childInit.stdin.write("test\r\n");
-        return;
-      }
-      
-      childInit.stdin.write("\r\n");
-    }
-  });
-
-  childInit.stdout.on('end', function() {
-    isEnd = true;
-    childInit.stdin.end();
-  });
-
-  childInit.on('close', function(code){
-    callback(code, output);
-  });
-}
 var tmpRootOption = ''
 var tmpCWD = ''
 
@@ -126,7 +76,7 @@ describe('Project commands',function(){
       "github:microservice-framework/example-todo",
       "-s",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "install exited with code " + code + "\n" + output);
       done();
     });
 
@@ -141,7 +91,7 @@ describe('Project commands',function(){
       "-s",
       "-r",
       tmpRootOption.name, "--json"], (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "install exited with code " + code + "\n" + output);
       done();
     });
   
@@ -155,7 +105,7 @@ describe('Project commands',function(){
       "@microservice-framework/microservice-auth",
       "-s",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "install exited with code " + code + "\n" + output);
       done();
     });
 
@@ -170,7 +120,7 @@ describe('Project commands',function(){
       "-s",
       "-r",
       tmpRootOption.name, "--json"], (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "install exited with code " + code + "\n" + output);
       done();
     });
   
@@ -184,7 +134,7 @@ describe('Project commands',function(){
       "example-todo",
       "-d",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "update exited with code " + code + "\n" + output);
       done();
     });
 
@@ -199,7 +149,7 @@ describe('Project commands',function(){
       "-d",
       "-r",
       tmpRootOption.name, "--json"], (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "update exited with code " + code + "\n" + output);
       done();
     });
   
@@ -213,7 +163,7 @@ describe('Project commands',function(){
       "microservice-auth",
       "-d",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "update exited with code " + code + "\n" + output);
       done();
     });
 
@@ -228,7 +178,7 @@ describe('Project commands',function(){
       "-d",
       "-r",
       tmpRootOption.name, "--json"], (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "update exited with code " + code + "\n" + output);
       done();
     });
   
@@ -242,7 +192,7 @@ describe('Project commands',function(){
       "example-todo",
       "-s",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "uninstall exited with code " + code + "\n" + output);
       done();
     });
 
@@ -257,7 +207,7 @@ describe('Project commands',function(){
       "-s",
       "-r",
       tmpRootOption.name, "--json"], (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "uninstall exited with code " + code + "\n" + output);
       done();
     });
   
@@ -270,7 +220,7 @@ describe('Project commands',function(){
       "env",
       "test",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "env exited with code " + code + "\n" + output);
       done();
     });
 
@@ -284,7 +234,7 @@ describe('Project commands',function(){
       "test",
       "-r",
       tmpRootOption.name, "--json"], (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "env exited with code " + code + "\n" + output);
       done();
     });
   
@@ -297,7 +247,7 @@ describe('Project commands',function(){
       "env",
       "default",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "env exited with code " + code + "\n" + output);
       done();
     });
 
@@ -311,7 +261,7 @@ describe('Project commands',function(){
       "default",
       "-r",
       tmpRootOption.name, "--json"], (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "env exited with code " + code + "\n" + output);
       done();
     });
   

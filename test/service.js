@@ -1,62 +1,11 @@
 const expect  = require("chai").expect;
 const tmp = require('tmp');
-const exec = require('child_process').exec;
-const spawn = require('cross-spawn');
 const fs = require('fs-extra');
+const execMFW = require('./tools.js').execMFW;
 
 var debug = false;
 if (process.env.DEBUG) {
   debug = true;
-}
-
-const execMFW = function(cmd, args, cwd, callback) {
-  let isEnd = false;
-  let timeout = false;
-  if (!callback) {
-    callback = cwd;
-    cwd = process.cwd();
-  }
-  if (debug){
-    console.log('exec' , cmd, args, cwd);
-  }
-  let childInit = spawn(cmd, args, { cwd: cwd });
-  var output = '';
-  childInit.stdout.on('data', function (data) {
-    let incoming = data.toString();
-    output = output + incoming;
-    if (debug){
-      console.log('>>> ' + incoming);
-    }
-    if (!isEnd) {
-      if (timeout) {
-        clearTimeout(timeout);
-      }
-      timeout = setTimeout(()=> {
-        isEnd = true;
-        childInit.stdin.end();
-      }, 1000);
-
-      if (incoming.indexOf('name:') !== -1) {
-        childInit.stdin.write("test\r\n");
-        return;
-      }
-      if (incoming.indexOf('ROUTER SECRET') !== -1) {
-        childInit.stdin.write("test\r\n");
-        return;
-      }
-      
-      childInit.stdin.write("\r\n");
-    }
-  });
-
-  childInit.stdout.on('end', function() {
-    isEnd = true;
-    childInit.stdin.end();
-  });
-
-  childInit.on('close', function(code){
-    callback(code, output);
-  });
 }
 
 var tmpCWD = ''
@@ -85,7 +34,7 @@ describe('Status commands',function(){
       "github:microservice-framework/example-todo",
       "-s",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "install exited with code " + code + "\n" + output);
       done();
     });
 
@@ -99,7 +48,7 @@ describe('Status commands',function(){
       "start",
       "example-todo",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "start exited with code " + code + "\n" + output);
       done();
     });
 
@@ -112,7 +61,13 @@ describe('Status commands',function(){
       "status",
       "example-todo",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      try {
+        var answer = JSON.parse(output);
+      } catch (e) {
+        expect(e).to.equal(null, "JSON PARSE ERROR \n" + e + "\n" + output);
+      }
+      expect(answer.error.length).to.equal(0, "status exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "status exited with code " + code + "\n" + output);
       done();
     });
 
@@ -125,7 +80,7 @@ describe('Status commands',function(){
       "stop",
       "example-todo",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "stop exited with code " + code + "\n" + output);
       done();
     });
 
@@ -139,7 +94,7 @@ describe('Status commands',function(){
       "example-todo",
       "-r",
       tmpCWD.name, "--json"], (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "start exited with code " + code + "\n" + output);
       done();
     });
   
@@ -153,7 +108,13 @@ describe('Status commands',function(){
       "example-todo",
       "-r",
       tmpCWD.name, "--json"], (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      try {
+        var answer = JSON.parse(output);
+      } catch (e) {
+        expect(e).to.equal(null, "JSON PARSE ERROR \n" + e + "\n" + output);
+      }
+      expect(answer.error.length).to.equal(0, "status exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "status exited with code " + code + "\n" + output);
       done();
     });
   
@@ -167,7 +128,7 @@ describe('Status commands',function(){
       "example-todo",
       "-r",
       tmpCWD.name, "--json"], (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "stop exited with code " + code + "\n" + output);
       done();
     });
   
@@ -179,7 +140,7 @@ describe('Status commands',function(){
     execMFW(rootDir + '/bin/mfw', [
       "start",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "start exited with code " + code + "\n" + output);
       done();
     });
 
@@ -191,7 +152,13 @@ describe('Status commands',function(){
     execMFW(rootDir + '/bin/mfw', [
       "status",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      try {
+        var answer = JSON.parse(output);
+      } catch (e) {
+        expect(e).to.equal(null, "JSON PARSE ERROR \n" + e + "\n" + output);
+      }
+      expect(answer.error.length).to.equal(0, "status exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "status exited with code " + code + "\n" + output);
       done();
     });
 
@@ -203,7 +170,7 @@ describe('Status commands',function(){
     execMFW(rootDir + '/bin/mfw', [
       "stop",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "stop exited with code " + code + "\n" + output);
       done();
     });
 
@@ -217,7 +184,7 @@ describe('Status commands',function(){
       "all",
       "-r",
       tmpCWD.name, "--json"], (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "start exited with code " + code + "\n" + output);
       done();
     });
   
@@ -231,7 +198,13 @@ describe('Status commands',function(){
       "all",
       "-r",
       tmpCWD.name, "--json"], (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      try {
+        var answer = JSON.parse(output);
+      } catch (e) {
+        expect(e).to.equal(null, "JSON PARSE ERROR \n" + e + "\n" + output);
+      }
+      expect(answer.error.length).to.equal(0, "status exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "status exited with code " + code + "\n" + output);
       done();
     });
   
@@ -245,7 +218,7 @@ describe('Status commands',function(){
       "all",
       "-r",
       tmpCWD.name, "--json"], (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "stop exited with code " + code + "\n" + output);
       done();
     });
   
@@ -257,7 +230,7 @@ describe('Status commands',function(){
     execMFW(rootDir + '/bin/mfw', [
       "restart",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "restart exited with code " + code + "\n" + output);
       done();
     });
 
@@ -271,7 +244,7 @@ describe('Status commands',function(){
       "example-todo",
       "-r",
       tmpCWD.name, "--json"], (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "restart exited with code " + code + "\n" + output);
       done();
     });
   
@@ -283,7 +256,7 @@ describe('Status commands',function(){
     execMFW(rootDir + '/bin/mfw', [
       "stop",
       "--json"], tmpCWD.name, (code, output) => {
-      expect(code).to.equal(0, "init exited with code " + code + "\n" + output);
+      expect(code).to.equal(0, "stop exited with code " + code + "\n" + output);
       done();
     });
 

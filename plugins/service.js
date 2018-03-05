@@ -27,13 +27,20 @@ class StatusClass extends MFWCommandPrototypeClass {
    * Print Messages. Executed process.on('exit').
    */
   printMessages() {
+    let status = this.messages.status;
+    delete this.messages.status;
     if (this.isJsonOutput) {
+      for (let message of status) {
+        if (message.error) {
+          process.exitCode = 1
+          this.messages.error.push(message.name + ': ' + message.error);
+        }
+      }
       super.printMessages();
       return;
     }
     let rows = [];
-    let status = this.messages.status;
-    delete this.messages.status;
+
     super.printMessages();
 
     if (status.length > 0) {
@@ -43,6 +50,7 @@ class StatusClass extends MFWCommandPrototypeClass {
           version =  message.package.version;
         }
         if (message.error) {
+          process.exitCode = 1
           rows.push([
             colors.red(message.name),
             colors.gray(version),
