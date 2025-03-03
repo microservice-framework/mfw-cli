@@ -223,7 +223,7 @@ class StatusClass extends MFWCommandPrototypeClass {
       package: module.package,
       service: module,
     }
-    if (typeof data === 'boolean') {
+    if (typeof data === 'boolean' || data === null) {
       status.error = 'No pid file available.';
       if (this.isReport) {
         return this.emit('status', status);

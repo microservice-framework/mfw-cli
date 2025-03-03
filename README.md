@@ -177,3 +177,7 @@ The status report will include CPU, MEMORY usage and up/down + version and pid i
   - fixed setup on WIN platform
   - added `--json` option to get json output for all commands
   - tests are covering all commands
+- `1.3.1`
+  - fix issue with PID is not string
+- `1.3.2`
+  - fix issue with PID is null
