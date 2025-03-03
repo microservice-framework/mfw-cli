@@ -231,7 +231,7 @@ class StatusClass extends MFWCommandPrototypeClass {
       this.message('status', status);
       return;
     }
-    if (typeof data === 'string' || typeof data === 'string') {
+    if (typeof data === 'string' || typeof data === 'string' || typeof data === 'number') {
       status.pid = data;
     } else {
       status.pid = data.pid;
